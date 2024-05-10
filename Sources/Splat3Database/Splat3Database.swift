@@ -144,7 +144,7 @@ public class DatabaseManager {
     try db.create(table: "vsTeam",ifNotExists: true) { t in
       t.autoIncrementedPrimaryKey("id")
       t.column("order", .integer).notNull() // 0 is my team
-      t.column("color", .text).notNull()
+      t.column("color", .integer).notNull()
       t.column("judgement", .text)
 
       /// Team Result Attributes
@@ -159,13 +159,8 @@ public class DatabaseManager {
       t.column("festUniformBonusRate", .double)
       t.column("festStreakWinCount", .integer)
 
-    }
+      t.column("battleId", .integer).references("battle", column: "id")
 
-    try db.create(table: "vsAward",ifNotExists: true) { t in
-      t.column("name", .text).notNull()
-      t.column("rank", .boolean).notNull() // true for gold, false for silver
-
-      t.column("battle", .integer).references("battle", column: "id")
     }
 
     try db.create(table: "battle",ifNotExists: true) { t in
@@ -199,6 +194,8 @@ public class DatabaseManager {
       t.column("festContribution", .integer)
       t.column("festJewel", .integer)
       t.column("myFestPower", .integer)
+
+      t.column("awards",.text)
     }
   }
 
@@ -230,6 +227,29 @@ public class DatabaseManager {
       for (_,element) in json["enemyResults"].arrayValue.enumerated(){
         try CoopEnemyResult(json: element, coopId: coopId).insert(db)
       }
+    }
+  }
+
+  public func insertBattle(json:JSON) throws{
+    try self.dbQueue.write { db in
+      /// insert battle
+      try Battle(json:json).insert(db)
+      let battleId = db.lastInsertedRowID
+      /// insert vsTeam
+      try VsTeam(json: json["myTeam"], battleId: battleId).insert(db)
+      let vsTeamId = db.lastInsertedRowID
+      for (_,element) in json["myTeam"]["players"].arrayValue.enumerated(){
+        try Player(json: element, vsTeamId: vsTeamId).insert(db)
+      }
+
+      for (_,element) in json["otherTeams"].arrayValue.enumerated(){
+        try VsTeam(json: element, battleId: battleId).insert(db)
+        let vsTeamId = db.lastInsertedRowID
+        for (_,element) in element["players"].arrayValue.enumerated(){
+          try Player(json: element, vsTeamId: vsTeamId).insert(db)
+        }
+      }
+
     }
   }
 }

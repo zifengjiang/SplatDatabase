@@ -43,7 +43,8 @@ class DatabaseManagerTests: XCTestCase {
           try db.drop(table: "coopWaveResult")
 
           // 再删除父表
-
+        try db.drop(table: "vsTeam")
+        try db.drop(table: "battle")
           try db.drop(table: "coop")
       }
 
@@ -103,4 +104,29 @@ class DatabaseManagerTests: XCTestCase {
     XCTAssertEqual(players.count, 4)
     XCTAssertEqual(coopPlayerResults.count, 4)
   }
+  
+  func testInsertBattle() throws{
+    let data = try String(contentsOfFile: "/Users/jiangfeng/XcodeProject/Splat3Database/Tests/DatabaseManagerTests/json/VsHistoryDetailQuery.json")
+    let json:JSON = JSON(parseJSON: data)
+
+    let values = json["data"]
+
+    try dbManager.insertBattle(json: values[1])
+
+    let battles = try dbManager.dbQueue.read { db in
+      return try Battle.fetchAll(db)
+    }
+
+    let players = try dbManager.dbQueue.read { db in
+      return try Player.fetchAll(db)
+    }
+    let vsTeams = try dbManager.dbQueue.read { db in
+      return try VsTeam.fetchAll(db)
+    }
+    
+
+    XCTAssertEqual(battles.count, 1)
+    XCTAssertEqual(players.count, 8)
+  }
+
 }
