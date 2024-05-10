@@ -1,23 +1,33 @@
 // swift-tools-version: 5.10
 // The swift-tools-version declares the minimum version of Swift required to build this package.
 
+// swift-tools-version:5.10
 import PackageDescription
 
 let package = Package(
     name: "Splat3Database",
     products: [
-        // Products define the executables and libraries a package produces, making them visible to other packages.
         .library(
             name: "Splat3Database",
             targets: ["Splat3Database"]),
     ],
+    dependencies: [
+        // Declare the dependency on GRDB
+        .package(url: "https://github.com/groue/GRDB.swift.git", from: "6.27.0"),
+        /// swiftyjson
+          .package(url: "https://github.com/SwiftyJSON/SwiftyJSON.git", from: "5.0.2")
+    ],
     targets: [
-        // Targets are the basic building blocks of a package, defining a module or a test suite.
-        // Targets can depend on other targets in this package and products from dependencies.
         .target(
-            name: "Splat3Database"),
+            name: "Splat3Database",
+            dependencies: [
+                .product(name: "GRDB", package: "GRDB.swift"),
+                .product(name: "SwiftyJSON", package: "SwiftyJSON")
+            ]
+        ),
         .testTarget(
             name: "Splat3DatabaseTests",
             dependencies: ["Splat3Database"]),
+        .testTarget(name: "DatabaseManagerTests",dependencies: ["Splat3Database", .product(name: "GRDB", package: "GRDB.swift")])
     ]
 )
