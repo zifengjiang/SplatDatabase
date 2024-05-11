@@ -34,28 +34,29 @@ class DatabaseManagerTests: XCTestCase {
   }
 
   override func tearDownWithError() throws {
-      try dbManager.dbQueue.write { db in
-          // 先删除所有子表
-          try db.drop(table: "weapon")
-          try db.drop(table: "coopEnemyResult")
-          try db.drop(table: "player")
-          try db.drop(table: "coopPlayerResult")
-          try db.drop(table: "coopWaveResult")
+    try dbManager.dbQueue.write { db in
+      // 先删除所有子表
+      try db.drop(table: "imageMap")
+      try db.drop(table: "weapon")
+      try db.drop(table: "coopEnemyResult")
+      try db.drop(table: "player")
+      try db.drop(table: "coopPlayerResult")
+      try db.drop(table: "coopWaveResult")
 
-          // 再删除父表
-        try db.drop(table: "vsTeam")
-        try db.drop(table: "battle")
-          try db.drop(table: "coop")
-      }
+      // 再删除父表
+      try db.drop(table: "vsTeam")
+      try db.drop(table: "battle")
+      try db.drop(table: "coop")
+    }
 
-      // 清理和关闭数据库
-      dbManager.dbQueue = nil
-      dbManager = nil
+    // 清理和关闭数据库
+    dbManager.dbQueue = nil
+    dbManager = nil
 
-      // 删除临时数据库文件
-      try FileManager.default.removeItem(atPath: tempDatabasePath)
+    // 删除临时数据库文件
+    try FileManager.default.removeItem(atPath: tempDatabasePath)
 
-      super.tearDown()
+    super.tearDown()
   }
 
 
@@ -104,7 +105,7 @@ class DatabaseManagerTests: XCTestCase {
     XCTAssertEqual(players.count, 4)
     XCTAssertEqual(coopPlayerResults.count, 4)
   }
-  
+
   func testInsertBattle() throws{
     let data = try String(contentsOfFile: "/Users/jiangfeng/XcodeProject/Splat3Database/Tests/DatabaseManagerTests/json/VsHistoryDetailQuery.json")
     let json:JSON = JSON(parseJSON: data)
@@ -123,10 +124,32 @@ class DatabaseManagerTests: XCTestCase {
     let vsTeams = try dbManager.dbQueue.read { db in
       return try VsTeam.fetchAll(db)
     }
-    
+
 
     XCTAssertEqual(battles.count, 1)
     XCTAssertEqual(players.count, 8)
   }
 
+  func testUpdateImageMap() async throws{
+    let versions = ["099","100","110","111","120","200","210","300","310","400","410","500","510","520","600","610","700","710","720"]
+    var imageMaps:[[ImageMap]] = []
+    for version in versions{
+      try await dbManager.updateImageMap(version: version)
+      imageMaps.append(try await dbManager.dbQueue.read { db in
+        return try ImageMap.fetchAll(db)
+      })
+    }
+    XCTAssertTrue(imageMaps.count > 0)
+  }
+
+  func testExportDatabase() async throws{
+    try await dbManager.updateImageMap(version: "720")
+    let destinationURL = try dbManager.exportDatabase(to: URL(string: "/Users/jiangfeng/XcodeProject/FoodTracker"))
+    let imageMap = try await dbManager.dbQueue.read { db in
+      return try ImageMap.fetchAll(db)
+    }
+
+    XCTAssertEqual(imageMap.count, 1991)
+    XCTAssertTrue(FileManager.default.fileExists(atPath: destinationURL.path))
+  }
 }
