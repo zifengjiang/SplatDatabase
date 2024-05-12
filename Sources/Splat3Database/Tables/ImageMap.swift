@@ -21,5 +21,17 @@ public struct ImageMap:Codable, FetchableRecord, PersistableRecord{
     self.name = name
     self.hash = hash
   }
-
 }
+
+public func getImageId(for nameId:String? = nil,hash:String? = nil, db:Database) -> UInt16 {
+  if let nameId = nameId {
+    let row = try! Row.fetchOne(db, sql: "SELECT id FROM imageMap WHERE nameId = ?",arguments:[nameId])
+    return row?["id"] ?? 0
+  }
+  if let hash = hash {
+    let row = try! Row.fetchOne(db, sql: "SELECT id FROM imageMap WHERE hash = ?",arguments:[hash])
+    return row?["id"] ?? 0
+  }
+  return 0
+}
+

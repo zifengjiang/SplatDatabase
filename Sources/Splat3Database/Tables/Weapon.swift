@@ -19,7 +19,7 @@ import SwiftyJSON
  */
 
 public struct Weapon:Codable, FetchableRecord,PersistableRecord{
-  var id:String
+  var imageMapId:UInt16
   var order:Int
   var coopId:Int64?
   var coopPlayerResultId:Int64?

@@ -4,8 +4,6 @@
 import Foundation
 import GRDB
 import SwiftyJSON
-import CryptoKit
-
 
 public class DatabaseManager {
   public static let shared = DatabaseManager()
@@ -14,42 +12,48 @@ public class DatabaseManager {
 
   /// Function to export the current database to a specified location
   public func exportDatabase(to destinationPath: URL? = nil) throws -> URL {
-    // Ensure the database is initialized
-    guard let dbQueue = dbQueue else {
-      throw NSError(domain: "DatabaseManager", code: 1, userInfo: [NSLocalizedDescriptionKey: "数据库未初始化"])
-    }
+      guard let dbQueue = dbQueue else {
+          throw NSError(domain: "DatabaseManager", code: 1, userInfo: [NSLocalizedDescriptionKey: "数据库未初始化"])
+      }
 
-    // Get the path to the current database file
-    let dbPath = dbQueue.path
+      // Get the path to the current database file
+      let dbPath = dbQueue.path
 
-    // Determine the destination path
-    let fileManager = FileManager.default
-    let destinationFileName = "Splat3Database_copy.sqlite"
-    var destinationURL = destinationPath ?? fileManager.temporaryDirectory.appendingPathComponent(destinationFileName)
+      // Determine the destination path
+      let fileManager = FileManager.default
+      let destinationFileName = "Splat3Database_copy.sqlite"
+      var destinationURL = destinationPath ?? fileManager.temporaryDirectory.appendingPathComponent(destinationFileName)
 
-    // Check if destinationPath is a directory and append the default file name if it is
-    var isDir: ObjCBool = false
-    if let path = destinationPath?.path, fileManager.fileExists(atPath: path, isDirectory: &isDir), isDir.boolValue {
-      destinationURL = destinationPath!.appendingPathComponent(destinationFileName)
-    }
+      // Check if destinationPath is a directory and append the default file name if it is
+      var isDir: ObjCBool = false
+      if let path = destinationPath?.path, fileManager.fileExists(atPath: path, isDirectory: &isDir), isDir.boolValue {
+          destinationURL = destinationPath!.appendingPathComponent(destinationFileName)
+      }
 
-    // Remove any existing file at the destination
-    if fileManager.fileExists(atPath: destinationURL.path) {
-      try fileManager.removeItem(at: destinationURL)
-    }
+      // Remove any existing file at the destination
+      if fileManager.fileExists(atPath: destinationURL.path) {
+          try fileManager.removeItem(at: destinationURL)
+      }
 
-    // Perform the export by copying the file
-    try fileManager.copyItem(atPath: dbPath, toPath: destinationURL.path)
+      // Perform the export by copying the file
+      try fileManager.copyItem(atPath: dbPath, toPath: destinationURL.path)
 
-    // Return the destination URL where the database was exported
-    return destinationURL
+      return destinationURL
   }
 
-  public func createDatabase() throws {
+
+  public func createDatabase(path:String? = nil) throws {
+    if let path = path {
+      dbQueue = try DatabasePool(path: path)
+      try dbQueue.write { db in
+        try setupSchema(db: db)
+      }
+      return
+    }
     let databaseURL = try FileManager.default
       .url(for: .applicationSupportDirectory, in: .userDomainMask, appropriateFor: nil, create: true)
       .appendingPathComponent("Splat3Database.sqlite")
-
+    
     dbQueue = try DatabasePool(path: databaseURL.path)
 
     try dbQueue.write { db in
@@ -91,7 +95,7 @@ public class DatabaseManager {
     }
 
     try db.create(table: "weapon",ifNotExists: true) { t in
-      t.column("id", .text).notNull()
+      t.column("imageMapId", .integer).notNull().references("imageMap", column: "id")
       t.column("order", .integer).notNull().defaults(to: 0)
       t.column("coopId", .integer).references("coop", column: "id") // shift weapons
       t.column("coopPlayerResultId", .integer).references("coopPlayerResult", column: "id") // player weapons
@@ -101,7 +105,7 @@ public class DatabaseManager {
     try db.create(table: "coopPlayerResult",ifNotExists: true) { t in
       t.autoIncrementedPrimaryKey("id")
       t.column("order",.integer).notNull()
-      t.column("specialWeapon", .text)
+      t.column("specialWeaponId", .integer).references("imageMap", column: "id")
       t.column("defeatEnemyCount", .integer).notNull()
       t.column("deliverCount", .integer).notNull()
       t.column("goldenAssistCount", .integer).notNull()
@@ -126,7 +130,7 @@ public class DatabaseManager {
     }
 
     try db.create(table: "coopEnemyResult",ifNotExists: true) { t in
-      t.column("id", .text).notNull()
+      t.column("enemyId", .integer).references("imageMap", column: "id")
       t.column("teamDefeatCount", .text).notNull()
       t.column("defeatCount", .integer).notNull()
       t.column("popCount", .integer).notNull()
@@ -144,21 +148,18 @@ public class DatabaseManager {
       t.column("name", .text).notNull()
       t.column("nameId", .text).notNull()
       t.column("species", .boolean).notNull() // true for octoling, false for inkling
-      t.column("nameplateBackground", .text).notNull()
+      t.column("nameplate", .integer).notNull()
       t.column("nameplateTextColor", .integer).notNull()
-      t.column("nameplateBadge1", .text)
-      t.column("nameplateBadge2", .text)
-      t.column("nameplateBadge3", .text)
 
       /// Coop Attributes
-      t.column("uniform", .text)
+      t.column("uniformId", .integer).references("imageMap",column: "id")
 
       /// Battle Attributes
       t.column("paint", .integer)
-      t.column("weapon", .text)
-      t.column("headGear", .text)
-      t.column("clothingGear", .text)
-      t.column("shoesGear", .text)
+      t.column("weaponId", .integer).references("imageMap", column: "id")
+      t.column("headGear", .integer)
+      t.column("clothingGear", .integer)
+      t.column("shoesGear", .integer)
       t.column("crown", .boolean)
       t.column("festDragonCert", .text)
       t.column("festGrade", .text)
@@ -339,29 +340,38 @@ public class DatabaseManager {
         let coopId = db.lastInsertedRowID
         /// insert weapons
         for (index,element) in json["weapons"].arrayValue.enumerated(){
-          try Weapon(id: element["image"]["url"].stringValue.getImageHash(), order: index,coopId: coopId).insert(db)
+          try Weapon(imageMapId: getImageId(hash:element["image"]["url"].stringValue.getImageHash(), db: db), order: index,coopId: coopId).insert(db)
         }
         /// insert coopPlayerResult
-        try CoopPlayerResult(json: json["myResult"], order: 0, coopId: coopId).insert(db)
-        try Player(json: json["myResult"]["player"], coopPlayerResultId: db.lastInsertedRowID).insert(db)
+        try CoopPlayerResult(json: json["myResult"], order: 0, coopId: coopId,db: db).insert(db)
+        var coopPlayerResultId = db.lastInsertedRowID
+        for (index,element) in json["myResult"]["weapons"].arrayValue.enumerated(){
+          try Weapon(imageMapId: getImageId(hash:element["image"]["url"].stringValue.getImageHash(), db: db), order: index,coopPlayerResultId: coopPlayerResultId).insert(db)
+        }
+        try Player(json: json["myResult"]["player"], coopPlayerResultId: coopPlayerResultId, db: db).insert(db)
         for (index,element) in json["memberResults"].arrayValue.enumerated(){
-          try CoopPlayerResult(json: element, order: index + 1, coopId: coopId).insert(db)
-          try Player(json: element["player"], coopPlayerResultId: db.lastInsertedRowID).insert(db)
+          try CoopPlayerResult(json: element, order: index + 1, coopId: coopId,db: db).insert(db)
+          coopPlayerResultId = db.lastInsertedRowID
+          for (index,element) in element["weapons"].arrayValue.enumerated(){
+            try Weapon(imageMapId: getImageId(hash:element["image"]["url"].stringValue.getImageHash(), db: db), order: index,coopPlayerResultId: coopPlayerResultId).insert(db)
+          }
+          try Player(json: element["player"], coopPlayerResultId: coopPlayerResultId, db: db).insert(db)
         }
         /// insert coopWaveResult
         for (_,element) in json["waveResults"].arrayValue.enumerated(){
           try CoopWaveResult(json: element, coopId: coopId).insert(db)
           let coopWaveResultId = db.lastInsertedRowID
           for (index,element) in element["specialWeapons"].arrayValue.enumerated(){
-            try Weapon(id: element["image"]["url"].stringValue.getImageHash(), order: index,coopWaveResultId: coopWaveResultId).insert(db)
+            try Weapon(imageMapId: getImageId(hash:element["image"]["url"].stringValue.getImageHash(), db: db), order: index,coopWaveResultId: coopWaveResultId).insert(db)
           }
         }
         /// insert coopEnemyResult
         for (_,element) in json["enemyResults"].arrayValue.enumerated(){
-          try CoopEnemyResult(json: element, coopId: coopId).insert(db)
+          try CoopEnemyResult(json: element, coopId: coopId,db: db).insert(db)
         }
         return .commit
       } catch{
+        print(error)
         return .rollback
       }
     }
@@ -377,14 +387,14 @@ public class DatabaseManager {
         try VsTeam(json: json["myTeam"], battleId: battleId).insert(db)
         let vsTeamId = db.lastInsertedRowID
         for (_,element) in json["myTeam"]["players"].arrayValue.enumerated(){
-          try Player(json: element, vsTeamId: vsTeamId).insert(db)
+          try Player(json: element, vsTeamId: vsTeamId, db: db).insert(db)
         }
 
         for (_,element) in json["otherTeams"].arrayValue.enumerated(){
           try VsTeam(json: element, battleId: battleId).insert(db)
           let vsTeamId = db.lastInsertedRowID
           for (_,element) in element["players"].arrayValue.enumerated(){
-            try Player(json: element, vsTeamId: vsTeamId).insert(db)
+            try Player(json: element, vsTeamId: vsTeamId, db: db).insert(db)
           }
         }
         return .commit

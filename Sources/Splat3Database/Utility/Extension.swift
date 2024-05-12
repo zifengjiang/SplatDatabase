@@ -7,6 +7,7 @@
 
 import Foundation
 import SwiftyJSON
+import GRDB
 
 extension String {
   func getImageHash() -> String {
@@ -38,10 +39,12 @@ extension Dictionary where Key == String, Value == JSON {
     return rgbaToUInt(r: r, g: g, b: b, a: a)
   }
 
-  func toGearString() -> String{
-    let id = self["originalImage"]?["url"].string?.getImageHash()
-    let primaryGearPower = self["primaryGearPower"]?["image"]["url"].string?.getImageHash()
-    let additonalGearPower:[String] = self["additionalGearPowers"]?.array?.compactMap{$0["image"]["url"].string?.getImageHash()} ?? []
-    return "\(id ?? "")_\(primaryGearPower ?? "")_\(additonalGearPower.joined(separator: "_"))"
+  func toGearPackableNumbers(db:Database) -> PackableNumbers{
+    let id = getImageId(hash:self["originalImage"]?["url"].string?.getImageHash(), db: db)
+    let primaryGearPower = getImageId(hash:self["primaryGearPower"]?["image"]["url"].string?.getImageHash(),db: db)
+    let additonalGearPower:[UInt16] = self["additionalGearPowers"]?.array?.compactMap{getImageId(hash:$0["image"]["url"].string?.getImageHash(),db: db)} ?? []
+
+    return PackableNumbers([id,primaryGearPower] + additonalGearPower)
   }
 }
+

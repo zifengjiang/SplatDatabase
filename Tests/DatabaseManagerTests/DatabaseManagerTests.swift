@@ -21,40 +21,31 @@ class DatabaseManagerTests: XCTestCase {
   override func setUpWithError() throws {
     super.setUp()
 
-    // 创建一个临时文件路径用于测试数据库
-    let temporaryDirectory = FileManager.default.temporaryDirectory
-    let temporaryFile = temporaryDirectory.appendingPathComponent(UUID().uuidString).appendingPathExtension("sqlite")
-    tempDatabasePath = temporaryFile.path
-
-    // 初始化 DatabaseManager，使用临时文件路径
     dbManager = DatabaseManager()
-    dbManager.dbQueue = try DatabasePool(path: tempDatabasePath)
-
-    try dbManager.createDatabase()
+    try dbManager.createDatabase(path: "/Users/jiangfeng/XcodeProject/FoodTracker/ink.sqlite")
   }
 
   override func tearDownWithError() throws {
     try dbManager.dbQueue.write { db in
-      // 先删除所有子表
-      try db.drop(table: "imageMap")
-      try db.drop(table: "weapon")
-      try db.drop(table: "coopEnemyResult")
-      try db.drop(table: "player")
-      try db.drop(table: "coopPlayerResult")
-      try db.drop(table: "coopWaveResult")
-
-      // 再删除父表
-      try db.drop(table: "vsTeam")
-      try db.drop(table: "battle")
-      try db.drop(table: "coop")
+//      // 先删除所有子表
+//      try db.drop(table: "imageMap")
+//      try db.drop(table: "weapon")
+//      try db.drop(table: "coopEnemyResult")
+//      try db.drop(table: "player")
+//      try db.drop(table: "coopPlayerResult")
+//      try db.drop(table: "coopWaveResult")
+//
+//      // 再删除父表
+//      try db.drop(table: "vsTeam")
+//      try db.drop(table: "battle")
+//      try db.drop(table: "coop")
     }
 
     // 清理和关闭数据库
     dbManager.dbQueue = nil
     dbManager = nil
 
-    // 删除临时数据库文件
-    try FileManager.default.removeItem(atPath: tempDatabasePath)
+
 
     super.tearDown()
   }
@@ -85,49 +76,57 @@ class DatabaseManagerTests: XCTestCase {
     let coops = try dbManager.dbQueue.read { db in
       return try Coop.fetchAll(db)
     }
-    let weapons = try dbManager.dbQueue.read { db in
-      return try Weapon.fetchAll(db)
-    }
+
     let players = try dbManager.dbQueue.read { db in
       return try Player.fetchAll(db)
     }
     let coopPlayerResults = try dbManager.dbQueue.read { db in
       return try CoopPlayerResult.fetchAll(db)
     }
-    let coopWaveResults = try dbManager.dbQueue.read { db in
-      return try CoopWaveResult.fetchAll(db)
-    }
-    let coopEnemyResults = try dbManager.dbQueue.read { db in
-      return try CoopEnemyResult.fetchAll(db)
-    }
+
 
     XCTAssertEqual(coops.count, 1)
     XCTAssertEqual(players.count, 4)
     XCTAssertEqual(coopPlayerResults.count, 4)
   }
 
-  func testInsertBattle() throws{
-    let data = try String(contentsOfFile: "/Users/jiangfeng/XcodeProject/Splat3Database/Tests/DatabaseManagerTests/json/VsHistoryDetailQuery.json")
-    let json:JSON = JSON(parseJSON: data)
+  func testInsertBattle() async throws{
+    var data = try String(contentsOfFile: "/Users/jiangfeng/XcodeProject/Splat3Database/Tests/DatabaseManagerTests/json/VsHistoryDetailQuery.json")
+    var json:JSON = JSON(parseJSON: data)
 
-    let values = json["data"]
-
+    var values = json["data"]
+    try await dbManager.updateImageMap(version: "720")
     try dbManager.insertBattle(json: values[1])
 
-    let battles = try dbManager.dbQueue.read { db in
+    data = try String(contentsOfFile: "/Users/jiangfeng/XcodeProject/Splat3Database/Tests/DatabaseManagerTests/json/CoopDetailHolder.json")
+    json = JSON(parseJSON: data)
+
+    values = json["data"]["coopHistoryDetail"]
+
+    try dbManager.insertCoop(json: values)
+
+    let battles = try await dbManager.dbQueue.read { db in
       return try Battle.fetchAll(db)
     }
 
-    let players = try dbManager.dbQueue.read { db in
+    let players = try await dbManager.dbQueue.read { db in
       return try Player.fetchAll(db)
     }
-    let vsTeams = try dbManager.dbQueue.read { db in
+    let vsTeams = try await dbManager.dbQueue.read { db in
       return try VsTeam.fetchAll(db)
     }
 
+    let imageMap = try await dbManager.dbQueue.read { db in
+      return try ImageMap.fetchAll(db)
+    }
 
+    let destinationURL = try dbManager.exportDatabase(to: URL(string: "/Users/jiangfeng/XcodeProject/FoodTracker"))
+
+    XCTAssertEqual(imageMap.count, 1991)
+    XCTAssertTrue(FileManager.default.fileExists(atPath: destinationURL.path))
     XCTAssertEqual(battles.count, 1)
-    XCTAssertEqual(players.count, 8)
+    XCTAssertEqual(vsTeams.count, 2)
+    XCTAssertEqual(players.count, 12)
   }
 
   func testUpdateImageMap() async throws{

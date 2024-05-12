@@ -20,21 +20,18 @@ public struct Player: Codable, FetchableRecord, PersistableRecord {
   var name: String
   var nameId: String
   var species: Bool
-  var nameplateBackground: String
+  @DatabasePackableNumbers var nameplate: PackableNumbers
   var nameplateTextColor: UInt32
-  var nameplateBadge1: String?
-  var nameplateBadge2: String?
-  var nameplateBadge3: String?
 
   // Coop Attributes
-  var uniform: String?
+  var uniformId: UInt16?
 
   // Battle Attributes
   var paint: Int?
-  var weapon: String?
-  var headGear: String?
-  var clothingGear: String?
-  var shoesGear: String?
+  var weaponId: UInt16?
+  @DatabasePackableNumbers var headGear: PackableNumbers
+  @DatabasePackableNumbers var clothingGear: PackableNumbers
+  @DatabasePackableNumbers var shoesGear: PackableNumbers
   var crown: Bool?
   var festDragonCert: String?
   var festGrade: String?
@@ -55,7 +52,7 @@ public struct Player: Codable, FetchableRecord, PersistableRecord {
   public static let databaseTableName = "player"
 
   /// init from json
-  public init(json: JSON, vsTeamId: Int64? = nil, coopPlayerResultId: Int64? = nil) {
+  public init(json: JSON, vsTeamId: Int64? = nil, coopPlayerResultId: Int64? = nil, db:Database) {
     self.coopPlayerResultId = coopPlayerResultId
     self.vsTeamId = vsTeamId
     self.sp3PrincipalId = json["id"].stringValue
@@ -63,19 +60,26 @@ public struct Player: Codable, FetchableRecord, PersistableRecord {
     self.name = json["name"].stringValue
     self.nameId = json["nameId"].stringValue
     self.species = json["species"].stringValue == "INKLING"
-    self.nameplateBackground = json["nameplate"]["background"]["id"].stringValue
-    self.nameplateTextColor = json["nameplate"]["background"]["textColor"].dictionaryValue.toRGBAUInt32()
-    self.nameplateBadge1 = json["nameplate"]["badges"][0]["id"].string
-    self.nameplateBadge2 = json["nameplate"]["badges"][1]["id"].string
-    self.nameplateBadge3 = json["nameplate"]["badges"][2]["id"].string
+    let nameplateBackground = getImageId(for: json["nameplate"]["background"]["id"].stringValue, db: db)
+    let nameplateBadge1 = getImageId(for: json["nameplate"]["badges"][0]["id"].string,db: db)
+    let nameplateBadge2 = getImageId(for: json["nameplate"]["badges"][1]["id"].string,db: db)
+    let nameplateBadge3 = getImageId(for: json["nameplate"]["badges"][2]["id"].string,db: db)
 
-    self.uniform = json["uniform"]["id"].string
+    self.nameplate = PackableNumbers([nameplateBackground,nameplateBadge1, nameplateBadge2, nameplateBadge3])
+
+    self.nameplateTextColor = json["nameplate"]["background"]["textColor"].dictionaryValue.toRGBAUInt32()
+
+    if coopPlayerResultId != nil{
+      self.uniformId = getImageId(for:json["uniform"]["id"].string, db: db)
+    }
 
     self.paint = json["paint"].int
-    self.weapon = json["weapon"]["id"].string
-    self.headGear = json["headGear"].dictionary?.toGearString()
-    self.clothingGear = json["clothingGear"].dictionary?.toGearString()
-    self.shoesGear = json["shoesGear"].dictionary?.toGearString()
+    if vsTeamId != nil{
+      self.weaponId = getImageId(for: json["weapon"]["id"].string,db: db)
+    }
+    self.headGear = json["headGear"].dictionary?.toGearPackableNumbers(db: db) ?? PackableNumbers([0])
+    self.clothingGear = json["clothingGear"].dictionary?.toGearPackableNumbers(db: db) ?? PackableNumbers([0])
+    self.shoesGear = json["shoesGear"].dictionary?.toGearPackableNumbers(db: db) ?? PackableNumbers([0])
     self.crown = json["crown"].bool
     self.festDragonCert = json["festDragonCert"].string
     self.festGrade = json["festGrade"].string
@@ -88,7 +92,7 @@ public struct Player: Codable, FetchableRecord, PersistableRecord {
     self.special = json["result"]["special"].int
 
 //    self.vsTeamId = 00
-    self.type = self.uniform != nil
+    self.type = self.uniformId != nil
   }
 }
 

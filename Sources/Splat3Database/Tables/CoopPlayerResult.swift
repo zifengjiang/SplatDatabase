@@ -26,7 +26,7 @@ import SwiftyJSON
 public struct CoopPlayerResult:Codable, FetchableRecord,PersistableRecord{
   var id:Int64?
   var order:Int
-  var specialWeapon:String?
+  var specialWeaponId:UInt16?
   var defeatEnemyCount:Int
   var deliverCount:Int
   var goldenAssistCount:Int
@@ -35,10 +35,15 @@ public struct CoopPlayerResult:Codable, FetchableRecord,PersistableRecord{
   var rescuedCount:Int
   var coopId:Int64?
 
-  public init(json:JSON, order:Int, coopId:Int64){
+  public init(json:JSON, order:Int, coopId:Int64,db:Database){
     self.coopId = coopId
     self.order = order
-    self.specialWeapon = json["specialWeapon"]["image"]["url"].string?.getImageHash()
+    let specialWeaponId = getImageId(hash:json["specialWeapon"]["image"]["url"].string?.getImageHash(),db: db)
+    if specialWeaponId == 0{
+      self.specialWeaponId = nil
+    }else{
+      self.specialWeaponId = UInt16(specialWeaponId)
+    }
     self.defeatEnemyCount = json["defeatEnemyCount"].intValue
     self.deliverCount = json["deliverCount"].intValue
     self.goldenAssistCount = json["goldenAssistCount"].intValue
