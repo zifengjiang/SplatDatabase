@@ -8,7 +8,7 @@
 import XCTest
 import GRDB
 import SwiftyJSON
-@testable import SplatDatabase3
+@testable import SplatDatabase
 
 import GRDB
 import XCTest

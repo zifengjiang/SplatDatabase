@@ -5,14 +5,14 @@
 import PackageDescription
 
 let package = Package(
-    name: "SplatDatabase3",
+    name: "SplatDatabase",
     platforms: [
       .iOS(.v15),
     ],
     products: [
         .library(
-            name: "SplatDatabase3",
-            targets: ["SplatDatabase3"]),
+            name: "SplatDatabase",
+            targets: ["SplatDatabase"]),
     ],
     dependencies: [
         // Declare the dependency on GRDB
@@ -22,22 +22,22 @@ let package = Package(
     ],
     targets: [
         .target(
-            name: "SplatDatabase3",
+            name: "SplatDatabase",
             dependencies: [
                 .product(name: "GRDB", package: "GRDB.swift"),
                 .product(name: "SwiftyJSON", package: "SwiftyJSON")
             ],
             path: "Sources",
             resources: [
-              .process("SplatDatabase3/Resources")
+              .process("SplatDatabase/Resources")
             ]
         ),
         .testTarget(
             name: "Splat3DatabaseTests",
-            dependencies: ["SplatDatabase3", .product(name: "GRDB", package: "GRDB.swift")],
+            dependencies: ["SplatDatabase", .product(name: "GRDB", package: "GRDB.swift")],
             path: "Tests",
             resources: [
-              .process("Splat3DatabaseTests/Resources")
+              .process("SplatDatabaseTests/Resources")
             ]
         )
     ]
