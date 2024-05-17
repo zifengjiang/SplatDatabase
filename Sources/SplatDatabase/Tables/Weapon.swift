@@ -3,10 +3,10 @@ import GRDB
 import SwiftyJSON
 
 public struct Weapon:Codable, FetchableRecord,PersistableRecord{
-  var imageMapId:UInt16
-  var order:Int
-  var coopId:Int64?
-  var coopPlayerResultId:Int64?
-  var coopWaveResultId:Int64?
+    public var imageMapId:UInt16
+    public var order:Int
+    public var coopId:Int64?
+    public var coopPlayerResultId:Int64?
+    public var coopWaveResultId:Int64?
 }
 

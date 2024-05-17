@@ -3,24 +3,24 @@ import GRDB
 import SwiftyJSON
 
 public struct VsTeam:Codable, FetchableRecord, PersistableRecord{
-    var id:Int64?
-    var order:Int
-    @Packable var color:PackableNumbers
-    var judgement:String?
+    public var id:Int64?
+    public var order:Int
+    @Packable public var color:PackableNumbers
+    public var judgement:String?
 
         // Team Result Attributes
-    var paintPoint:Int?
-    var paintRatio:Double?
-    var score:Int?
-    var noroshi:Int?
+    public var paintPoint:Int?
+    public var paintRatio:Double?
+    public var score:Int?
+    public var noroshi:Int?
 
-    var tricolorRole:String?
-    var festTeamName:String?
-    var festUniformName:String?
-    var festUniformBonusRate:Double?
-    var festStreakWinCount:Int?
+    public var tricolorRole:String?
+    public var festTeamName:String?
+    public var festUniformName:String?
+    public var festUniformBonusRate:Double?
+    public var festStreakWinCount:Int?
 
-    var battleId:Int64?
+    public var battleId:Int64?
 
     public init(json:JSON, battleId:Int64){
         self.battleId = battleId

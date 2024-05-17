@@ -41,6 +41,12 @@ public func getI18nId(by key:String?, db:Database) -> UInt16?{
   return row?["id"] ?? nil
 }
 
+public func getI18Name(by key:String?, db:Database) -> String?{
+  guard let key = key else{ return nil }
+  let row = try! Row.fetchOne(db, sql: "SELECT en FROM i18n WHERE key = ? LIMIT 1",arguments:[key])
+  return row?["en"] ?? nil
+}
+
 
 
 extension SplatDatabase{

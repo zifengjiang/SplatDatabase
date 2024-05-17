@@ -17,13 +17,12 @@ func getBadgeMap(from json: JSON) -> [ImageMap] {
       continue
     }
     let nameId = Data("Badge-\(badgeId)".utf8).base64EncodedString()
-    let name = "Badge-\(badgeId)"
     if let badgeName = badgeJSON["Name"].string,
        let imageData = badgeName.data(using: .utf8) {
       let digest = SHA256.hash(data: imageData)
       let hash = digest.map { String(format: "%02hhx", $0) }.joined()
 
-      let badge = ImageMap(nameId: nameId, name: name, hash: hash)
+      let badge = ImageMap(nameId: nameId, name: "Badge_\(badgeName)", hash: hash)
       badges.append(badge)
     }
   }
@@ -47,7 +46,7 @@ func getWeaponMainMap(from json:JSON) -> [ImageMap]{
         let digest = SHA256.hash(data: imageData)
         let hash = digest.map { String(format: "%02hhx", $0) }.joined()
 
-        let weapon = ImageMap(nameId: nameId, name: name, hash: hash)
+        let weapon = ImageMap(nameId: nameId, name: "Wst_\(weaponName)", hash: hash)
         weapons.append(weapon)
       }
     }
@@ -71,7 +70,7 @@ func getWeaponSubspe(from json:JSON, prefix:String) -> [ImageMap]{
         let digest = SHA256.hash(data: imageData)
         let hash = digest.map { String(format: "%02hhx", $0) }.joined()
 
-        let weapon = ImageMap(nameId: nameId, name: name, hash: hash)
+          let weapon = ImageMap(nameId: nameId, name: "\(prefix == "Sub" ? "Wsb" : "Wsp")_\(weaponName)", hash: hash)
         specials.append(weapon)
       }
     }
@@ -93,7 +92,7 @@ func getNameplateMap(from json:JSON) -> [ImageMap]{
       let digest = SHA256.hash(data: imageData)
       let hash = digest.map { String(format: "%02hhx", $0) }.joined()
 
-      let background = ImageMap(nameId: nameId, name: name, hash: hash)
+      let background = ImageMap(nameId: nameId, name: backgroundName, hash: hash)
       backgrounds.append(background)
     }
   }
@@ -159,7 +158,7 @@ func getCoopEnemyMap(from json:JSON) -> [ImageMap]{
         let digest = SHA256.hash(data: imageData)
         let hash = digest.map { String(format: "%02hhx", $0) }.joined()
 
-        let salmonid = ImageMap(nameId: nameId, name: name, hash: hash)
+        let salmonid = ImageMap(nameId: nameId, name: type, hash: hash)
         salmonids.append(salmonid)
       }
     }
@@ -182,7 +181,7 @@ func getCoopSkinMap(from json:JSON) -> [ImageMap]{
       let digest = SHA256.hash(data: imageData)
       let hash = digest.map { String(format: "%02hhx", $0) }.joined()
 
-      let workSuit = ImageMap(nameId: nameId, name: name, hash: hash)
+      let workSuit = ImageMap(nameId: nameId, name: workSuitName, hash: hash)
       workSuits.append(workSuit)
     }
   }
@@ -199,11 +198,14 @@ func getStageMap(from json:JSON, prefix:String) -> [ImageMap]{
     }
     let name = "\(prefix)Stage-\(stageId)"
     let nameId = Data(name.utf8).base64EncodedString()
-    if let stageName = stageJSON["__RowId"].string?.replacingOccurrences(of: "\\d", with: "", options: .regularExpression),
+    if var stageName = stageJSON["__RowId"].string?.replacingOccurrences(of: "\\d", with: "", options: .regularExpression),
        let imageData = stageName.data(using: .utf8) {
       let digest = SHA256.hash(data: imageData)
       let hash = digest.map { String(format: "%02hhx", $0) }.joined()
-
+      
+        if let isBigRun = stageJSON["IsBigRun"].bool, isBigRun{
+            stageName = stageName.replacingOccurrences(of: "Cop", with: "Vss")
+        }
       let stage = ImageMap(nameId: nameId, name: name, hash: hash)
       stages.append(stage)
     }

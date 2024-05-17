@@ -3,15 +3,15 @@ import GRDB
 import SwiftyJSON
 
 public struct CoopWaveResult:Codable, FetchableRecord,PersistableRecord{
-  var id: Int64?
-  var waveNumber: Int
-  var waterLevel: Int
-  var eventWave: UInt16?
-  var deliverNorm: Int?
-  var goldenPopCount: Int
-  var teamDeliverCount: Int?
-
-  var coopId: Int64?
+  public var id: Int64?
+  public var waveNumber: Int
+  public var waterLevel: Int
+  public var eventWave: UInt16?
+  public var deliverNorm: Int?
+  public var goldenPopCount: Int
+  public var teamDeliverCount: Int?
+    
+  public var coopId: Int64?
 
   public static let databaseTableName = "coopWaveResult"
 

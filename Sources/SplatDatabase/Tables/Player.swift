@@ -4,42 +4,42 @@ import SwiftyJSON
 
     /// struct for player table
 public struct Player: Codable, FetchableRecord, PersistableRecord {
-    var id: Int64?
-    var isCoop: Bool
+    public var id: Int64?
+    public var isCoop: Bool
 
         // Common Attributes
-    var sp3PrincipalId: String
-    var byname: String
-    var name: String
-    var nameId: String
-    var species: Bool
-    @Packable var nameplate: PackableNumbers
-    @Packable var nameplateTextColor: PackableNumbers
+    public var sp3PrincipalId: String
+    public var byname: String
+    public var name: String
+    public var nameId: String
+    public var species: Bool
+    @Packable public var nameplate: PackableNumbers
+    @Packable public var nameplateTextColor: PackableNumbers
 
         // Coop Attributes
-    var uniformId: UInt16?
+    public var uniformId: UInt16?
 
         // Battle Attributes
-    var paint: Int?
-    var weaponId: UInt16?
-    @Packable var headGear: PackableNumbers
-    @Packable var clothingGear: PackableNumbers
-    @Packable var shoesGear: PackableNumbers
-    var crown: Bool?
-    var festDragonCert: String?
-    var festGrade: String?
-    var isMyself: Bool?
+    public var paint: Int?
+    public var weaponId: UInt16?
+    @Packable public var headGear: PackableNumbers
+    @Packable public var clothingGear: PackableNumbers
+    @Packable public var shoesGear: PackableNumbers
+    public var crown: Bool?
+    public var festDragonCert: String?
+    public var festGrade: String?
+    public var isMyself: Bool?
 
         // Battle Result Attributes
-    var kill: Int?
-    var death: Int?
-    var assist: Int?
-    var special: Int?
-    var noroshiTry: Int?
+    public var kill: Int?
+    public var death: Int?
+    public var assist: Int?
+    public var special: Int?
+    public var noroshiTry: Int?
 
         // References to vsTeam
-    var vsTeamId: Int64?
-    var coopPlayerResultId: Int64?
+    public var vsTeamId: Int64?
+    public var coopPlayerResultId: Int64?
 
         // Database table name
     public static let databaseTableName = "player"

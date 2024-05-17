@@ -3,16 +3,16 @@ import GRDB
 import SwiftyJSON
 
 public struct CoopPlayerResult:Codable, FetchableRecord,PersistableRecord{
-  var id:Int64?
-  var order:Int
-  var specialWeaponId:UInt16?
-  var defeatEnemyCount:Int
-  var deliverCount:Int
-  var goldenAssistCount:Int
-  var goldenDeliverCount:Int
-  var rescueCount:Int
-  var rescuedCount:Int
-  var coopId:Int64?
+  public var id:Int64?
+  public var order:Int
+  public var specialWeaponId:UInt16?
+  public var defeatEnemyCount:Int
+  public var deliverCount:Int
+  public var goldenAssistCount:Int
+  public var goldenDeliverCount:Int
+  public var rescueCount:Int
+  public var rescuedCount:Int
+  public var coopId:Int64?
 
   public init(json:JSON, order:Int, coopId:Int64,db:Database){
     self.coopId = coopId

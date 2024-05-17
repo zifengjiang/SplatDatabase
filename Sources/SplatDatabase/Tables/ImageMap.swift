@@ -3,10 +3,10 @@ import SwiftyJSON
 import GRDB
 
 public struct ImageMap:Codable, FetchableRecord, PersistableRecord{
-    var id:Int64?
-    var nameId:String
-    var name:String
-    var hash:String
+   public var id:Int64?
+   public var nameId:String
+   public var name:String
+   public var hash:String
 
     public init(id: Int64? = nil, nameId: String, name: String, hash: String) {
         self.id = id
@@ -29,6 +29,11 @@ public func getImageId(for nameId:String? = nil,hash:String? = nil, db:Database)
         return 0
     }
     return 0
+}
+
+public func getImageNameId(by id:UInt16,db:Database) -> String{
+    let row = try! Row.fetchOne(db, sql: "SELECT nameId FROM imageMap WHERE id = ?",arguments:[id])
+    return row?["nameId"] ?? ""
 }
 
 extension SplatDatabase {

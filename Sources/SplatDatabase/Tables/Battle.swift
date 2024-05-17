@@ -3,38 +3,38 @@ import GRDB
 import SwiftyJSON
 
 public struct Battle:Codable, FetchableRecord, PersistableRecord{
-  var id:Int64?
-  var sp3PrincipalId:String
-  var mode:String
-  var rule:String
-  var stageId:UInt16
-  var playedTime:Date
-  var duration:Int
-  var judgement:String
-  var knockout:String?
-  var udemae:String?
-  var preDetailId:String?
+  public var id:Int64?
+  public var sp3PrincipalId:String
+  public var mode:String
+  public var rule:String
+  public var stageId:UInt16
+  public var playedTime:Date
+  public var duration:Int
+  public var judgement:String
+  public var knockout:String?
+  public var udemae:String?
+  public var preDetailId:String?
 
-  // BankaraMatch Attributes
-  var earnedUdemaePoint:Int?
-  var bankaraMode:String?
-  var bankaraPower:Data?
+        // BankaraMatch Attributes
+  public var earnedUdemaePoint:Int?
+  public var bankaraMode:String?
+  public var bankaraPower:Data?
 
-  // LeagueMatch Attributes
-  var leagueMatchEventId:String?
-  var myLeaguePower:Int?
+   // LeagueMatch Attributes
+  public var leagueMatchEventId:String?
+  public var myLeaguePower:Int?
 
-  // XMatch Attributes
-  var lastXPower:Double?
-  var entireXPower:Double?
+   // XMatch Attributes
+  public var lastXPower:Double?
+  public var entireXPower:Double?
 
-  // FestMatch Attributes
-  var festDragonMatchType:String?
-  var festContribution:Int?
-  var festJewel:Int?
-  var myFestPower:Int?
-  var awards:String
-  var accountId:Int64
+   // FestMatch Attributes
+  public var festDragonMatchType:String?
+  public var festContribution:Int?
+  public var festJewel:Int?
+  public var myFestPower:Int?
+  public var awards:String
+  public var accountId:Int64
 
   public init(json:JSON, db:Database){
     self.sp3PrincipalId = json["id"].stringValue.getDetailUUID()
