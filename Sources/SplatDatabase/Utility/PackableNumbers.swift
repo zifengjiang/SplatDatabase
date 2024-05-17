@@ -8,7 +8,7 @@
 import Foundation
 import GRDB
 
-struct PackableNumbers:Codable {
+public struct PackableNumbers:Codable {
     var numbers: [UInt16]  // 使用 UInt16 存储，因为它足够容纳 0...4095 的值
 
     init(_ numbers: [UInt16]) {
