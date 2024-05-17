@@ -3,62 +3,62 @@ import GRDB
 import SwiftyJSON
 
 public struct Coop: Codable, FetchableRecord, PersistableRecord {
-  var id: Int64?
-  var sp3PrincipalId: String
-  var rule:String
-  var boss:UInt16?
-  @Packable var suppliedWeapon: PackableNumbers
-  var egg:Int
-  var bossDefeated:Bool?
-  var wave:Int
-  var stageId:UInt16
-  var afterGrade:Int?
-  var afterGradePoint:Int?
-  var afterGradeDiff:Int?
-  var preDetailId:String?
-  var goldScale:Int?
-  var silverScale:Int?
-  var bronzeScale:Int?
-  var jobPoint:Int?
-  var jobScore:Int?
-  var jobRate:Double?
-  var jobBonus:Int?
-  var playedTime:Date
-  var dangerRate:Double
-  var accountId:Int64
+    public var id: Int64?
+    public var sp3PrincipalId: String
+    public var rule:String
+    public var boss:UInt16?
+    @Packable public var suppliedWeapon: PackableNumbers
+    public var egg:Int
+    public var bossDefeated:Bool?
+    public var wave:Int
+    public var stageId:UInt16
+    public var afterGrade:Int?
+    public var afterGradePoint:Int?
+    public var afterGradeDiff:Int?
+    public var preDetailId:String?
+    public var goldScale:Int?
+    public var silverScale:Int?
+    public var bronzeScale:Int?
+    public var jobPoint:Int?
+    public var jobScore:Int?
+    public var jobRate:Double?
+    public var jobBonus:Int?
+    public var playedTime:Date
+    public var dangerRate:Double
+    public var accountId:Int64
 
-  public init(json:JSON, db:Database){
-    self.sp3PrincipalId = json["id"].stringValue.getDetailUUID()
-    self.rule = json["rule"].stringValue
-    if let boss = json["bossResult"]["boss"]["id"].string{
-      self.bossDefeated = json["bossResult"]["hasDefeatBoss"].boolValue
-      self.boss = getImageId(for:boss ,db: db)
+    public init(json:JSON, db:Database){
+        self.sp3PrincipalId = json["id"].stringValue.getDetailUUID()
+        self.rule = json["rule"].stringValue
+        if let boss = json["bossResult"]["boss"]["id"].string{
+            self.bossDefeated = json["bossResult"]["hasDefeatBoss"].boolValue
+            self.boss = getImageId(for:boss ,db: db)
 
+        }
+        self.suppliedWeapon = PackableNumbers(json["weapons"].arrayValue.map({ j in
+            return getImageId(hash:j["image"]["url"].stringValue.getImageHash(), db: db)
+        }))
+        let resultWave = json["resultWave"].intValue
+        self.wave = (resultWave == 0) ? ((self.rule == "TEAM_CONTEST") ? 5 : 3) : (resultWave - 1)
+        self.stageId = getImageId(for: json["coopStage"]["id"].stringValue, db: db)
+        self.afterGrade = json["afterGrade"]["id"].string?.getCoopGradeId()
+        self.afterGradePoint = json["afterGradePoint"].int
+        self.afterGradeDiff = 0/*json["afterGradeDiff"].int*/
+        self.preDetailId = json["previousHistoryDetail"]["id"].string?.getDetailUUID()
+        self.goldScale = json["scale"]["gold"].int
+        self.silverScale = json["scale"]["silver"].int
+        self.bronzeScale = json["scale"]["bronze"].int
+        self.jobPoint = json["jobPoint"].int
+        self.jobScore = json["jobScore"].int
+        self.jobRate = json["jobRate"].double
+        self.jobBonus = json["jobBonus"].int
+        self.playedTime = json["playedTime"].stringValue.utcToDate()
+        self.dangerRate = json["dangerRate"].doubleValue
+        self.accountId = getAccountId(by: json["id"].stringValue.extractUserId(), db: db)
+        self.egg = json["waveResults"].arrayValue.reduce(0, { (result, wave) in
+            return result + wave["teamDeliverCount"].intValue
+        })
     }
-    self.suppliedWeapon = PackableNumbers(json["weapons"].arrayValue.map({ j in
-      return getImageId(hash:j["image"]["url"].stringValue.getImageHash(), db: db)
-    }))
-    let resultWave = json["resultWave"].intValue
-    self.wave = (resultWave == 0) ? ((self.rule == "TEAM_CONTEST") ? 5 : 3) : (resultWave - 1)
-    self.stageId = getImageId(for: json["coopStage"]["id"].stringValue, db: db)
-    self.afterGrade = json["afterGrade"]["id"].string?.getCoopGradeId()
-    self.afterGradePoint = json["afterGradePoint"].int
-    self.afterGradeDiff = 0/*json["afterGradeDiff"].int*/
-    self.preDetailId = json["previousHistoryDetail"]["id"].string?.getDetailUUID()
-    self.goldScale = json["scale"]["gold"].int
-    self.silverScale = json["scale"]["silver"].int
-    self.bronzeScale = json["scale"]["bronze"].int
-    self.jobPoint = json["jobPoint"].int
-    self.jobScore = json["jobScore"].int
-    self.jobRate = json["jobRate"].double
-    self.jobBonus = json["jobBonus"].int
-    self.playedTime = json["playedTime"].stringValue.utcToDate()
-    self.dangerRate = json["dangerRate"].doubleValue
-    self.accountId = getAccountId(by: json["id"].stringValue.extractUserId(), db: db)
-    self.egg = json["waveResults"].arrayValue.reduce(0, { (result, wave) in
-      return result + wave["teamDeliverCount"].intValue
-    })
-  }
 }
 
 extension SplatDatabase{
