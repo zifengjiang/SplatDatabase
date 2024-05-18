@@ -163,13 +163,13 @@ let last_500_battle_sql = """
 """
 
 public enum SQL {
-    case enemy_status(accountId: String, GroupID: Int)
-    case weapon_status(accountId: String, GroupID: Int)
+    case enemy_status(accountId: Int, GroupID: Int)
+    case weapon_status(accountId: Int, GroupID: Int)
     case coop_view
-    case group_status(accountId: String, GroupID: Int)
-    case wave_result(accountId: String, GroupID: Int)
-    case last_500_coop(accountId: String)
-    case last_500_battle(accountId: String)
+    case group_status(accountId: Int, GroupID: Int)
+    case wave_result(accountId: Int, GroupID: Int)
+    case last_500_coop(accountId: Int)
+    case last_500_battle(accountId: Int)
     case unknown
 
     public var request: SQLRequest<Row> {
