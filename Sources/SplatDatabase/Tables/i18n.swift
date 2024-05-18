@@ -2,7 +2,7 @@ import Foundation
 import GRDB
 import SwiftyJSON
 
-// 定义一个结构体来匹配 i18n 表的结构
+    // 定义一个结构体来匹配 i18n 表的结构
 struct I18n: Codable, FetchableRecord, PersistableRecord {
     var id: Int64?
     var key: String
@@ -18,7 +18,7 @@ struct I18n: Codable, FetchableRecord, PersistableRecord {
     var it: String?
     var nl: String?
 
-    // 使用字典初始化本地化数据
+        // 使用字典初始化本地化数据
     init(key: String, translations: [String: String?]) {
         self.key = key
         self.zhCN = translations["zhCN"] ?? nil
@@ -36,20 +36,20 @@ struct I18n: Codable, FetchableRecord, PersistableRecord {
 }
 
 public func getI18nId(by key:String?, db:Database) -> UInt16?{
-  guard let key = key else{ return nil }
-  let row = try! Row.fetchOne(db, sql: "SELECT id FROM i18n WHERE key = ?",arguments:[key])
-  return row?["id"] ?? nil
+    guard let key = key else{ return nil }
+    let row = try! Row.fetchOne(db, sql: "SELECT id FROM i18n WHERE key = ?",arguments:[key])
+    return row?["id"] ?? nil
 }
 
 public func getI18Name(by key:String?, db:Database) -> String?{
-  guard let key = key else{ return nil }
-  let row = try! Row.fetchOne(db, sql: "SELECT en FROM i18n WHERE key = ? LIMIT 1",arguments:[key])
-  return row?["en"] ?? nil
+    guard let key = key else{ return nil }
+    let row = try! Row.fetchOne(db, sql: "SELECT en FROM i18n WHERE key = ? LIMIT 1",arguments:[key])
+    return row?["en"] ?? nil
 }
 
 
 
-extension SplatDatabase{
+extension SplatDatabase {
     private func parseLocalizationFile(named fileName: String, in bundle: Bundle) -> [String: String]? {
         guard let url = bundle.url(forResource: fileName, withExtension: "json") else {
             print("Failed to locate \(fileName).json in bundle.")
@@ -65,25 +65,19 @@ extension SplatDatabase{
         }
     }
 
-    private func insertLocalizationData(localizationData: [String: [String: String?]]) throws {
+    private func insertLocalizationData(localizationData: [String: [String: String?]], db: Database) throws {
         for (key, translations) in localizationData {
             let k = key.split(separator: "_").first!
+            let exists = try I18n.filter(Column("key") == String(k)).fetchOne(db) != nil
+            if exists { continue }
             let record = I18n(key: String(k), translations: translations)
-            try self.dbQueue.writeInTransaction { db in
-                do{
-                    try record.insert(db)
-                    return .commit
-                }catch{
-                    return .rollback
-                }
-            }
+            try record.insert(db)
         }
     }
 
-    func updateI18n() throws {
+    func updateI18n(db: Database) throws {
         let bundle = Bundle.module
 
-            // 文件名列表，不包括.json扩展名
         let jsonFileNames = [
             "de",
             "en",
@@ -109,6 +103,6 @@ extension SplatDatabase{
             }
         }
 
-        try insertLocalizationData(localizationData: localizationData)
+        try insertLocalizationData(localizationData: localizationData, db: db)
     }
 }

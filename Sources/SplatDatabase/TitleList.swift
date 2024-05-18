@@ -1,9 +1,9 @@
-//
-//  File.swift
-//  
-//
-//  Created by 姜锋 on 5/14/24.
-//
+    //
+    //  File.swift
+    //
+    //
+    //  Created by 姜锋 on 5/14/24.
+    //
 
 import Foundation
 import SwiftyJSON
@@ -22,7 +22,7 @@ class TitleList {
 }
 
 public func formatByname(_ byname: String,language: String,db: Database) -> String {
-  let titleList = TitleList.shared.titleList
+    let titleList = TitleList.shared.titleList
     var tags: [(adjective: String, id: String, index: Int)] = []
     var node = titleList["adjectives"]
     var current = ""
@@ -43,10 +43,10 @@ public func formatByname(_ byname: String,language: String,db: Database) -> Stri
     for tag in tags {
         let subject = String(byname.dropFirst(tag.adjective.count)).trimmingCharacters(in: .whitespaces)
         if let subjectId = titleList["subjects"][tag.index][subject].string {
-          let subjectRow = try? Row.fetchOne(db, sql: "SELECT \(language) FROM i18n WHERE key = ?", arguments: [subjectId])
-          let adjectiveRow = try? Row.fetchOne(db, sql: "SELECT \(language) FROM i18n WHERE key = ?", arguments: [tag.id])
+            let subjectRow = try? Row.fetchOne(db, sql: "SELECT \(language) FROM i18n WHERE key = ?", arguments: [subjectId])
+            let adjectiveRow = try? Row.fetchOne(db, sql: "SELECT \(language) FROM i18n WHERE key = ?", arguments: [tag.id])
 
-          return "\(adjectiveRow?[language] ?? "") \(subjectRow?[language] ?? "")"
+            return "\(adjectiveRow?[language] ?? "") \(subjectRow?[language] ?? "")"
         }
     }
 

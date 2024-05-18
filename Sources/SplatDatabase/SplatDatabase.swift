@@ -3,11 +3,49 @@ import GRDB
 import SwiftyJSON
 
 public class SplatDatabase {
-    public static let shared = SplatDatabase()
+    public static let shared = try! SplatDatabase()
 
     public var dbQueue: DatabasePool!
 
-    private var migrator = DatabaseMigrator()
+
+    public init() throws{
+        let databaseURL = try FileManager.default
+            .url(for: .applicationSupportDirectory, in: .userDomainMask, appropriateFor: nil, create: true)
+            .appendingPathComponent("db.sqlite")
+
+        self.dbQueue = try DatabasePool(path: databaseURL.path)
+
+        try migrator.migrate(dbQueue)
+    }
+
+        //Debug use
+    public init(path:String) {
+        do {
+            try createDatabase(path: path)
+        }catch{
+            print(#file,#line,error.localizedDescription)
+        }
+    }
+
+    private var migrator: DatabaseMigrator {
+        var migrator = DatabaseMigrator()
+
+        migrator.registerMigration("createDatabase") { db in
+            try self.setupSchema(db: db)
+        }
+
+        migrator.registerMigration("insertI18nForVersion720") { db in
+            try self.updateI18n(db: db)
+        }
+
+        migrator.registerMigration("insertImageMapForVersion720") { db in
+            try self.updateImageMap(db: db) // 你可能需要类似修改 updateImageMap 方法
+        }
+
+        return migrator
+    }
+
+
 
         /// Function to export the current database to a specified location
     public func exportDatabase(to destinationPath: URL? = nil) throws -> URL {
@@ -35,41 +73,13 @@ public class SplatDatabase {
         return destinationURL
     }
 
-    public func createDatabase(path: String? = nil) throws {
-        let dbPath: String
+    public func createDatabase(path: String) throws {
 
-        if let path = path {
-            dbPath = path
-        } else {
-            let databaseURL = try FileManager.default
-                .url(for: .applicationSupportDirectory, in: .userDomainMask, appropriateFor: nil, create: true)
-                .appendingPathComponent("Splat3Database.sqlite")
-            dbPath = databaseURL.path
-        }
+        self.dbQueue = try DatabasePool(path: path)
 
-        dbQueue = try DatabasePool(path: dbPath)
-
-        try dbQueue.writeInTransaction { db in
-            do {
-                try setupSchema(db: db)
-                return .commit
-            } catch {
-                return .rollback
-            }
-        }
-
-        try updateI18n()
-        try updateImageMap()
+        try self.migrator.migrate(dbQueue)
     }
 
-
-    public init() {
-        do {
-            try createDatabase()
-        } catch {
-            print("Failed to create database: \(error)")
-        }
-    }
 
     private func setupSchema(db: Database) throws {
         try db.create(table: "i18n", ifNotExists: true) { t in
@@ -281,7 +291,8 @@ public class SplatDatabase {
 
         try db.execute(sql: coop_view_sql)
     }
-    
+
 }
+
 
 

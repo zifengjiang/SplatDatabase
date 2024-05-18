@@ -1,23 +1,23 @@
-//
-//  File.swift
-//
-//
-//  Created by 姜锋 on 5/12/24.
-//
+    //
+    //  File.swift
+    //
+    //
+    //  Created by 姜锋 on 5/12/24.
+    //
 
 import Foundation
 import GRDB
 
 public struct PackableNumbers:Codable {
     var numbers: [UInt16]  // 使用 UInt16 存储，因为它足够容纳 0...4095 的值
-
+    
     public init(_ numbers: [UInt16]) {
         assert(numbers.count <= 5, "Must have less than five numbers")
         assert(numbers.allSatisfy { $0 < 4096 }, "All numbers must be less than 4096")
         self.numbers = numbers
     }
-
-    /// 将 numbers 打包成一个 UInt64
+    
+        /// 将 numbers 打包成一个 UInt64
     func pack() -> UInt64 {
         var packed: UInt64 = 0
         for number in numbers + Array(repeating: 0, count: 5 - numbers.count){
@@ -25,8 +25,8 @@ public struct PackableNumbers:Codable {
         }
         return packed
     }
-
-    /// 从 UInt64 解包得到 PackableNumbers
+    
+        /// 从 UInt64 解包得到 PackableNumbers
     static func unpack(_ packed: UInt64) -> PackableNumbers {
         var numbers = [UInt16](repeating: 0, count: 5)
         for i in 0..<5 {
@@ -34,8 +34,8 @@ public struct PackableNumbers:Codable {
         }
         return PackableNumbers(numbers)
     }
-
-    // 通过下标访问和设置数字
+    
+        // 通过下标访问和设置数字
     public subscript(index: Int) -> UInt16 {
         get {
             assert(index >= 0 && index < 5, "Index out of range")
@@ -52,21 +52,21 @@ public struct PackableNumbers:Codable {
 @propertyWrapper
 public struct Packable:Codable {
     public var wrappedValue: PackableNumbers
-
+    
     public init(wrappedValue: PackableNumbers) {
         self.wrappedValue = wrappedValue
     }
 }
 
 extension Packable: DatabaseValueConvertible {
-    /// 将 PackableNumbers 转换为 DatabaseValue
+        /// 将 PackableNumbers 转换为 DatabaseValue
     public var databaseValue: DatabaseValue {
         let packedValue = wrappedValue.pack()
         let storedValue = Int64(bitPattern: packedValue)
         return storedValue.databaseValue
     }
-
-    /// 从 DatabaseValue 解析出 DatabasePackableNumbers
+    
+        /// 从 DatabaseValue 解析出 DatabasePackableNumbers
     public static func fromDatabaseValue(_ dbValue: DatabaseValue) -> Packable? {
         guard let storedValue = Int64.fromDatabaseValue(dbValue) else {
             return nil
@@ -75,7 +75,7 @@ extension Packable: DatabaseValueConvertible {
         let numbers = PackableNumbers.unpack(packedValue)
         return Packable(wrappedValue: numbers)
     }
-
-
+    
+    
 }
 

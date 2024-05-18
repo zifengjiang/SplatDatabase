@@ -3,10 +3,10 @@ import SwiftyJSON
 import GRDB
 
 public struct ImageMap:Codable, FetchableRecord, PersistableRecord{
-   public var id:Int64?
-   public var nameId:String
-   public var name:String
-   public var hash:String
+    public var id:Int64?
+    public var nameId:String
+    public var name:String
+    public var hash:String
 
     public init(id: Int64? = nil, nameId: String, name: String, hash: String) {
         self.id = id
@@ -37,17 +37,10 @@ public func getImageNameId(by id:UInt16,db:Database) -> String{
 }
 
 extension SplatDatabase {
-    public func updateImageMap() throws{
+    public func updateImageMap(db: Database) throws {
             // unknown
-        try self.dbQueue.writeInTransaction { db in
-            do{
-                for un in getUnknownMap(){
-                    try un.insert(db)
-                }
-                return .commit
-            }catch{
-                return .rollback
-            }
+        for un in getUnknownMap() {
+            try un.insert(db)
         }
 
             // Update badges
@@ -55,8 +48,11 @@ extension SplatDatabase {
             from: Splat3URLs.badge.filePath(),
             using: getBadgeMap,
             insertFunction: { badge, db in
-                try badge.insert(db)
-            }
+                if try ImageMap.filter(Column("nameId") == badge.nameId).fetchOne(db) == nil {
+                    try badge.insert(db)
+                }
+            },
+            db: db
         )
 
             // Update main weapons
@@ -64,8 +60,11 @@ extension SplatDatabase {
             from: Splat3URLs.weaponMain.filePath(),
             using: getWeaponMainMap,
             insertFunction: { weapon, db in
-                try weapon.insert(db)
-            }
+                if try ImageMap.filter(Column("nameId") == weapon.nameId).fetchOne(db) == nil {
+                    try weapon.insert(db)
+                }
+            },
+            db: db
         )
 
             // Update special weapons
@@ -73,8 +72,11 @@ extension SplatDatabase {
             from: Splat3URLs.weaponSpecial.filePath(),
             using: { json in getWeaponSubspe(from: json, prefix: "Special") },
             insertFunction: { special, db in
-                try special.insert(db)
-            }
+                if try ImageMap.filter(Column("nameId") == special.nameId).fetchOne(db) == nil {
+                    try special.insert(db)
+                }
+            },
+            db: db
         )
 
             // Update sub weapons
@@ -82,85 +84,93 @@ extension SplatDatabase {
             from: Splat3URLs.weaponSub.filePath(),
             using: { json in getWeaponSubspe(from: json, prefix: "Sub") },
             insertFunction: { sub, db in
-                try sub.insert(db)
-            }
+                if try ImageMap.filter(Column("nameId") == sub.nameId).fetchOne(db) == nil {
+                    try sub.insert(db)
+                }
+            },
+            db: db
         )
 
-            /// nameplate background
+            // Update nameplate background
         try fetchMapAndInsert(
             from: Splat3URLs.nameplate.filePath(),
             using: getNameplateMap,
             insertFunction: { nameplate, db in
-                try nameplate.insert(db)
-            }
+                if try ImageMap.filter(Column("nameId") == nameplate.nameId).fetchOne(db) == nil {
+                    try nameplate.insert(db)
+                }
+            },
+            db: db
         )
 
-            /// gears
-        let gears:[Splat3URLs] = [.head, .clothes, .shoes]
-        for gear in gears{
+            // Update gears
+        let gears: [Splat3URLs] = [.head, .clothes, .shoes]
+        for gear in gears {
             try fetchMapAndInsert(
                 from: gear.filePath(),
                 using: getGearMap,
                 insertFunction: { gear, db in
-                    try gear.insert(db)
-                }
+                    if try ImageMap.filter(Column("nameId") == gear.nameId).fetchOne(db) == nil {
+                        try gear.insert(db)
+                    }
+                },
+                db: db
             )
         }
 
-            /// enemy
+            // Update enemy
         try fetchMapAndInsert(
             from: Splat3URLs.enemy.filePath(),
             using: getCoopEnemyMap,
             insertFunction: { enemy, db in
-                try enemy.insert(db)
-            }
+                if try ImageMap.filter(Column("nameId") == enemy.nameId).fetchOne(db) == nil {
+                    try enemy.insert(db)
+                }
+            },
+            db: db
         )
 
-            /// skin
+            // Update skin
         try fetchMapAndInsert(
             from: Splat3URLs.skin.filePath(),
             using: getCoopSkinMap,
             insertFunction: { skin, db in
-                try skin.insert(db)
-            }
+                if try ImageMap.filter(Column("nameId") == skin.nameId).fetchOne(db) == nil {
+                    try skin.insert(db)
+                }
+            },
+            db: db
         )
 
-            /// stage
-        let stages:[Splat3URLs:String] = [.coopStage:"Coop", .vsStage:"Vs"]
-        for (url,mode) in stages{
+            // Update stage
+        let stages: [Splat3URLs: String] = [.coopStage: "Coop", .vsStage: "Vs"]
+        for (url, mode) in stages {
             try fetchMapAndInsert(
                 from: url.filePath(),
-                using: { json in getStageMap(from: json, prefix:  mode) },
+                using: { json in getStageMap(from: json, prefix: mode) },
                 insertFunction: { stage, db in
-                    try stage.insert(db)
-                }
+                    if try ImageMap.filter(Column("nameId") == stage.nameId).fetchOne(db) == nil {
+                        try stage.insert(db)
+                    }
+                },
+                db: db
             )
         }
-
     }
 
-        /// Function to insert items into the database
-    private func insertItems<T>(_ items: [T], using insertFunction: (T, Database) throws -> Void) throws {
-        for item in items {
-            try dbQueue.writeInTransaction { db in
-                do {
-                    try insertFunction(item, db)
-                    return .commit
-                } catch {
-                    return .rollback
-                }
-            }
-        }
-    }
-
+    
         /// General function to fetch, map, and insert data
     private func fetchMapAndInsert<T>(
         from url: String,
         using mapFunction: (JSON) -> [T],
-        insertFunction: @escaping (T, Database) throws -> Void
+        insertFunction: @escaping (T, Database) throws -> Void,
+        db: Database
     ) throws {
         let json = JSON(parseJSON: try String(contentsOfFile: url))
         let items = mapFunction(json)
-        try insertItems(items, using: insertFunction)
+        for item in items {
+            try insertFunction(item, db)
+        }
     }
+
 }
