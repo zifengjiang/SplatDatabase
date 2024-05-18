@@ -1,11 +1,5 @@
-    //
-    //  File.swift
-    //
-    //
-    //  Created by 姜锋 on 5/14/24.
-    //
-
 import Foundation
+import GRDB
 
 let enemy_status_sql = """
   WITH GroupedCoop AS (
@@ -129,3 +123,74 @@ let wave_result_sql = """
       eventWaveGroup,
       waterLevel;
 """
+
+let last_500_coop_sql = """
+    SELECT
+        CASE WHEN coop.wave = 3
+            AND coop.rule <> 'TEAM_CONTEST' THEN
+            1
+        WHEN coop.wave = 5
+            AND coop.rule = 'TEAM_CONTEST' THEN
+            1
+        WHEN coop.wave < 0 THEN
+            NULL
+        ELSE
+            0
+        END AS result
+    FROM
+        coop
+    WHERE
+        coop.accountId = ?
+    ORDER BY
+        coop.playedTime DESC
+    LIMIT 500
+"""
+
+let last_500_battle_sql = """
+    SELECT
+        CASE WHEN battle.judgement = "WIN" THEN 1
+        WHEN battle.judgement in ("LOSE","DRAW","DEEMED_LOSE") THEN 0
+        ELSE
+            NULL
+        END AS result
+    FROM
+        battle
+    WHERE
+        battle.accountId = ? AND battle."mode" != "PRIVATE"
+    ORDER BY
+        battle.playedTime DESC
+    LIMIT 500
+"""
+
+public enum SQL {
+    case enemy_status(accountId: String, GroupID: Int)
+    case weapon_status(accountId: String, GroupID: Int)
+    case coop_view
+    case group_status(accountId: String, GroupID: Int)
+    case wave_result(accountId: String, GroupID: Int)
+    case last_500_coop(accountId: String)
+    case last_500_battle(accountId: String)
+    case unknown
+
+    public var request: SQLRequest<Row> {
+        switch self {
+        case .enemy_status(let accountId, let GroupID):
+            return SQLRequest(sql: enemy_status_sql, arguments: [accountId, GroupID])
+        case .weapon_status(let accountId, let GroupID):
+            return SQLRequest(sql: weapon_status_sql, arguments: [accountId, GroupID])
+        case .coop_view:
+            return SQLRequest(sql: coop_view_sql)
+        case .group_status(let accountId, let GroupID):
+            return SQLRequest(sql: group_status_sql, arguments: [accountId, GroupID])
+        case .wave_result(let accountId, let GroupID):
+            return SQLRequest(sql: wave_result_sql, arguments: [accountId, GroupID])
+        case .last_500_coop(let accountId):
+            return SQLRequest(sql: last_500_coop_sql, arguments: [accountId])
+        case .last_500_battle(let accountId):
+            return SQLRequest(sql: last_500_battle_sql, arguments: [accountId])
+        case .unknown:
+            return SQLRequest(sql: "")
+        }
+    }
+}
+
