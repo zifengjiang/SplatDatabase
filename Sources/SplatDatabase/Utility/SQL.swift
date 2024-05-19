@@ -156,7 +156,7 @@ let last_500_battle_sql = """
     FROM
         battle
     WHERE
-        battle.accountId = 1 AND battle."mode" != 'PRIVATE'
+        battle.accountId = ? AND battle."mode" != 'PRIVATE'
     ORDER BY
         battle.playedTime DESC
     LIMIT 500
