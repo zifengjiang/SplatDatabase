@@ -148,15 +148,15 @@ let last_500_coop_sql = """
 
 let last_500_battle_sql = """
     SELECT
-        CASE WHEN battle.judgement = "WIN" THEN 1
-        WHEN battle.judgement in ("LOSE","DRAW","DEEMED_LOSE") THEN 0
+        CASE WHEN battle.judgement = 'WIN' THEN 1
+        WHEN battle.judgement in ('LOSE','DRAW','DEEMED_LOSE') THEN 0
         ELSE
             NULL
         END AS result
     FROM
         battle
     WHERE
-        battle.accountId = ? AND battle."mode" != "PRIVATE"
+        battle.accountId = 1 AND battle."mode" != 'PRIVATE'
     ORDER BY
         battle.playedTime DESC
     LIMIT 500
