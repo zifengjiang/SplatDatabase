@@ -206,7 +206,7 @@ func getStageMap(from json:JSON, prefix:String) -> [ImageMap]{
             if let isBigRun = stageJSON["IsBigRun"].bool, isBigRun{
                 stageName = stageName.replacingOccurrences(of: "Cop", with: "Vss")
             }
-            let stage = ImageMap(nameId: nameId, name: name, hash: hash)
+            let stage = ImageMap(nameId: nameId, name: stageName, hash: hash)
             stages.append(stage)
         }
     }

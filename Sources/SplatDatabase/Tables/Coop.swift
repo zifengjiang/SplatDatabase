@@ -61,6 +61,10 @@ public struct Coop: Codable, FetchableRecord, PersistableRecord {
     }
 }
 
+extension Coop {
+    public enum Columns 
+}
+
 extension SplatDatabase{
     public func insertCoop(json:JSON) throws{
         let sp3CoopId = json["id"].stringValue.extractUserId()

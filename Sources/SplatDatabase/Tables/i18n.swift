@@ -43,11 +43,14 @@ public func getI18nId(by key:String?, db:Database) -> UInt16?{
 
 public func getI18Name(by key:String?, db:Database) -> String?{
     guard let key = key else{ return nil }
-    let row = try! Row.fetchOne(db, sql: "SELECT en FROM i18n WHERE key = ? LIMIT 1",arguments:[key])
+    let row = try! Row.fetchOne(db, sql: "SELECT en FROM i18n WHERE key = ?",arguments:[key])
     return row?["en"] ?? nil
 }
 
-
+public func getI18Name(by id:Int, db:Database) -> String?{
+    let row = try! Row.fetchOne(db, sql: "SELECT key FROM i18n WHERE id = ?",arguments:[id])
+    return row?["key"] ?? nil
+}
 
 extension SplatDatabase {
     private func parseLocalizationFile(named fileName: String, in bundle: Bundle) -> [String: String]? {

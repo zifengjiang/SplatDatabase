@@ -31,7 +31,7 @@ public func getImageId(for nameId:String? = nil,hash:String? = nil, db:Database)
     return 0
 }
 
-public func getImageName(by id: UInt16,db:Database) -> String {
+public func getImageName(by id: UInt16, db:Database) -> String {
     let row = try! Row.fetchOne(db, sql: "SELECT name FROM imageMap WHERE id = ?",arguments:[id])
     return row?["name"] ?? ""
 }
