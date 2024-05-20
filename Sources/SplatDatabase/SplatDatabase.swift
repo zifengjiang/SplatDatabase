@@ -121,6 +121,7 @@ public class SplatDatabase {
             t.column("jobBonus", .integer)
             t.column("playedTime", .datetime).notNull()
             t.column("dangerRate", .double).notNull()
+            t.column("smellMeter", .integer)
             t.column("accountId", .integer).notNull().references("account", column: "id")
 
             t.uniqueKey(["sp3PrincipalId","playedTime", "accountId"], onConflict: .ignore)

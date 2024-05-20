@@ -25,6 +25,7 @@ public struct Coop: Codable, FetchableRecord, PersistableRecord {
     public var jobBonus:Int?
     public var playedTime:Date
     public var dangerRate:Double
+    public var smellMeter:Int?
     public var accountId:Int64
 
     public init(json:JSON, db:Database){
@@ -54,6 +55,7 @@ public struct Coop: Codable, FetchableRecord, PersistableRecord {
         self.jobBonus = json["jobBonus"].int
         self.playedTime = json["playedTime"].stringValue.utcToDate()
         self.dangerRate = json["dangerRate"].doubleValue
+        self.smellMeter = json["smellMeter"].int
         self.accountId = getAccountId(by: json["id"].stringValue.extractUserId(), db: db)
         self.egg = json["waveResults"].arrayValue.reduce(0, { (result, wave) in
             return result + wave["teamDeliverCount"].intValue
