@@ -9,6 +9,7 @@ public struct Coop: Codable, FetchableRecord, PersistableRecord {
     public var boss:UInt16?
     @Packable public var suppliedWeapon: PackableNumbers
     public var egg:Int
+    public var powerEgg:Int
     public var bossDefeated:Bool?
     public var wave:Int
     public var stageId:UInt16
@@ -61,6 +62,10 @@ public struct Coop: Codable, FetchableRecord, PersistableRecord {
         self.egg = json["waveResults"].arrayValue.reduce(0, { (result, wave) in
             return result + wave["teamDeliverCount"].intValue
         })
+        self.powerEgg = json["memberResults"].arrayValue.reduce(0, { (result, wave) in
+            return result + wave["deliverCount"].intValue
+        }) + json["myResult"]["deliverCount"].intValue
+
     }
 }
 

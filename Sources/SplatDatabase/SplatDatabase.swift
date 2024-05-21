@@ -105,6 +105,7 @@ public class SplatDatabase {
             t.column("boss", .integer).references("imageMap",column: "id")
             t.column("suppliedWeapon",.integer).notNull()
             t.column("egg",.integer).notNull()
+            t.column("powerEgg", .integer).notNull()
             t.column("bossDefeated", .boolean)
             t.column("wave", .integer).notNull()
             t.column("stageId", .integer).notNull().references("imageMap", column: "id")
