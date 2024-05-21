@@ -5,40 +5,61 @@ import SwiftyJSON
 extension SplatDatabase{
 
     public func importFromConchBay(dbPath: String, progress: ((Double) -> Void)? = nil) throws {
-        let db = try DatabasePool(path: dbPath)
+        let maxRetries = 6 // 最大重试次数
+        var currentRetry = 0
+        var offset = 0 // 初始偏移量为0
 
-        do {
-            try db.read { db in
-                let cursor = try Row.fetchCursor(db, sql: "SELECT mode, detail FROM result")
+        while currentRetry < maxRetries {
+            do {
+                let db = try DatabasePool(path: dbPath)
 
-                    // 计算总行数以更新进度
-                let totalRows = try Int.fetchOne(db, sql: "SELECT COUNT(*) FROM result") ?? 0
-                var processedRows = 0
+                try db.read { db in
+                        // 使用偏移量来查询数据库
+                    let cursor = try Row.fetchCursor(db, sql: "SELECT mode, detail FROM result LIMIT -1 OFFSET \(offset)")
 
-                while let row = try cursor.next() {
-                    if let mode = row["mode"] as String?, let detail = row["detail"] as String? {
-                        if mode == "salmon_run" {
-                            let json = JSON(parseJSON: detail)["coopHistoryDetail"]
-                            try self.insertCoop(json: json)
-                        } else {
-                            let json = JSON(parseJSON: detail)["vsHistoryDetail"]
-                            try self.insertBattle(json: json)
+                        // 计算总行数以更新进度
+                    let totalRows = try Int.fetchOne(db, sql: "SELECT COUNT(*) FROM result") ?? 0
+                    var processedRows = offset
+
+                    while let row = try cursor.next() {
+                        if let mode = row["mode"] as String?, let detail = row["detail"] as String? {
+                            if mode == "salmon_run" {
+                                let json = JSON(parseJSON: detail)["coopHistoryDetail"]
+                                try self.insertCoop(json: json)
+                            } else {
+                                let json = JSON(parseJSON: detail)["vsHistoryDetail"]
+                                try self.insertBattle(json: json)
+                            }
+                        }
+
+                            // 更新进度
+                        processedRows += 1
+                        offset += 1
+                        if let progress = progress {
+                            let progressValue = Double(processedRows) / Double(totalRows)
+                            progress(progressValue)
                         }
                     }
+                        // 更新偏移量
+                    offset += processedRows
+                }
 
-                        // 更新进度
-                    processedRows += 1
-                    if let progress = progress {
-                        let progressValue = Double(processedRows) / Double(totalRows)
-                        progress(progressValue)
-                    }
+                    // 如果成功执行到这里，退出循环
+                break
+            } catch {
+                    // 打印错误并尝试重试
+                print("An error occurred: \(error)")
+                currentRetry += 1
+                if currentRetry < maxRetries {
+                    print("Retrying...")
+                } else {
+                        // 达到最大重试次数时，抛出错误
+                    throw error
                 }
             }
-        } catch {
-            print("An error occurred: \(error)")
-            throw error
         }
     }
+
 }
 
 extension SplatDatabase{
