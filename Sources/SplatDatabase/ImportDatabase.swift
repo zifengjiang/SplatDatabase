@@ -25,6 +25,9 @@ extension SplatDatabase{
                         if let mode = row["mode"] as String?, let detail = row["detail"] as String? {
                             if mode == "salmon_run" {
                                 let json = JSON(parseJSON: detail)["coopHistoryDetail"]
+                                if try self.isCoopExist(id: json["id"].stringValue) {
+                                    continue
+                                }
                                 try self.insertCoop(json: json)
                             } else {
                                 let json = JSON(parseJSON: detail)["vsHistoryDetail"]
