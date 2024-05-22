@@ -4,13 +4,11 @@ import SwiftyJSON
 
 extension SplatDatabase{
 
-    public func importFromConchBay(dbPath: String, progress: ((Double) -> Void)? = nil) async throws {
-        let maxRetries = 6 // 最大重试次数
-        var currentRetry = 0
+    public func importFromConchBay(dbPath: String, progress: ((Double) -> Void)? = nil) throws {
 
         let db = try DatabasePool(path: dbPath)
 
-        try await db.read { db in
+        try db.read { db in
                 // 计算总行数以更新进度
             let totalRows = try Int.fetchOne(db, sql: "SELECT COUNT(*) FROM result") ?? 0
 
