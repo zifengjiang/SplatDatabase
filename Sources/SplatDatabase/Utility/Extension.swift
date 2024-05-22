@@ -98,3 +98,29 @@ extension Dictionary where Key == String, Value == JSON {
     
 }
 
+
+extension String {
+    var extractedDate: Date? {
+            // 提取时间部分的字符串
+        guard let timeString = self.split(separator: ":").last?.split(separator: "_").first else {
+            return nil
+        }
+
+            // 定义时间格式
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateFormat = "yyyyMMdd'T'HHmmss"
+        dateFormatter.timeZone = TimeZone(identifier: "UTC")
+
+            // 解析时间字符串并转换为Date类型
+        return dateFormatter.date(from: String(timeString))
+    }
+}
+
+extension String {
+    var base64DecodedString: String {
+        guard let data = Data(base64Encoded: self) else {
+            return ""
+        }
+        return String(data: data, encoding: .utf8) ?? ""
+    }
+}
