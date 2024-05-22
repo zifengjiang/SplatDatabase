@@ -105,6 +105,11 @@ class Splat3DatabaseTests: XCTestCase {
             print(progress)
         }
     }
+
+    func testIsCoopExist() throws{
+        let exist = try dbManager.isCoopExist(id: "Q29vcEhpc3RvcnlEZXRhaWwtdS1xYWVucG13d290MmN2eXEzcXBtbToyMDI0MDUxNFQxMTU2NDZfNzgyNjFhN2MtNWFiNy00OWNiLTlhZWItYThiYzk2NzVkYmNh")
+        XCTAssertTrue(exist)
+    }
 }
 
 

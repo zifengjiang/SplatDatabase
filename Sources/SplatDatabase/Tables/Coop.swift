@@ -183,7 +183,7 @@ extension SplatDatabase {
 extension SplatDatabase {
     public func isCoopExist(id:String) throws -> Bool {
         // t.uniqueKey(["sp3PrincipalId","playedTime"], onConflict: .ignore)
-        let sp3PrincipalId = id.extractUserId()
+        let sp3PrincipalId = id.getDetailUUID()
         let playedTime = id.base64DecodedString.extractedDate!
         let sql = "SELECT COUNT(*) FROM coop WHERE sp3PrincipalId = ? AND playedTime = ?"
         let count = try self.dbQueue.read { db in
