@@ -15,16 +15,12 @@ extension SplatDatabase{
                 // 使用偏移量来查询数据库
             let cursor = try Row.fetchCursor(db, sql: "SELECT mode, detail FROM result")
 
-
             var processedRows = 0
 
             while let row = try cursor.next() {
                 if let mode = row["mode"] as String?, let detail = row["detail"] as String? {
                     if mode == "salmon_run" {
                         let json = JSON(parseJSON: detail)["coopHistoryDetail"]
-                        if try self.isCoopExist(id: json["id"].stringValue) {
-                            continue
-                        }
                         try self.insertCoop(json: json)
                     } else {
                         let json = JSON(parseJSON: detail)["vsHistoryDetail"]

@@ -74,6 +74,9 @@ extension SplatDatabase{
     public func insertCoop(json:JSON) throws{
         let sp3CoopId = json["id"].stringValue.extractUserId()
         try insertAccount(id: sp3CoopId)
+        if try self.isCoopExist(id: json["id"].stringValue){
+            return
+        }
         try self.dbQueue.writeInTransaction { db in
             do{
                     /// insert coop
@@ -182,6 +185,14 @@ extension SplatDatabase {
 
 extension SplatDatabase {
     public func isCoopExist(id:String) throws -> Bool {
+        return try isDetailExist(id: id)
+    }
+
+    public func isBattleExist(id:String) throws -> Bool {
+        return try isDetailExist(id: id, kind: "battle")
+    }
+
+    private func isDetailExist(id:String, kind:String = "coop") throws -> Bool {
         let sp3PrincipalId = id.getDetailUUID()
         let playedTime = id.base64DecodedString.extractedDate!
         let sp3Id = id.extractUserId()
@@ -189,7 +200,7 @@ extension SplatDatabase {
                     SELECT
                     COUNT(*)
                     FROM
-                    coop
+                    \(kind)
                     JOIN account ON coop.accountId = account.id
                     WHERE
                     sp3PrincipalId = ?

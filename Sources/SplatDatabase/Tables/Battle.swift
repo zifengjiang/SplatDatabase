@@ -76,6 +76,9 @@ extension SplatDatabase {
     public func insertBattle(json:JSON) throws{
         let sp3CoopId = json["id"].stringValue.extractUserId()
         try insertAccount(id: sp3CoopId)
+        if try isBattleExist(id: json["id"].stringValue){
+            return
+        }
         try self.dbQueue.writeInTransaction { db in
             do{
                     /// insert battle
