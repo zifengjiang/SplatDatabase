@@ -41,7 +41,7 @@ public struct Battle:Codable, FetchableRecord, PersistableRecord{
         self.mode = json["vsMode"]["mode"].stringValue
         self.rule = json["vsRule"]["rule"].stringValue
         self.stageId = getImageId(for:json["vsStage"]["id"].stringValue, db: db)
-        self.playedTime = json["id"].stringValue.extractedDate!
+        self.playedTime = json["id"].stringValue.base64DecodedString.extractedDate!
         self.duration = json["duration"].intValue
         self.judgement = json["judgement"].stringValue
         self.knockout = json["knockout"].string
