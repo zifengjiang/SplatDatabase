@@ -55,7 +55,7 @@ public struct Coop: Codable, FetchableRecord, PersistableRecord {
         self.jobScore = json["jobScore"].int
         self.jobRate = json["jobRate"].double
         self.jobBonus = json["jobBonus"].int
-        self.playedTime = json["playedTime"].stringValue.utcToDate()
+        self.playedTime = json["id"].stringValue.extractedDate!
         self.dangerRate = json["dangerRate"].doubleValue
         self.smellMeter = json["smellMeter"].int
         self.accountId = getAccountId(by: json["id"].stringValue.extractUserId(), db: db)
