@@ -188,15 +188,15 @@ extension SplatDatabase {
 }
 
 extension SplatDatabase {
-    public func isCoopExist(id:String, db:Database) throws -> Bool {
+    public func isCoopExist(id:String, db:Database?) throws -> Bool {
         return try isDetailExist(id: id, db: db)
     }
 
-    public func isBattleExist(id:String, db:Database) throws -> Bool {
+    public func isBattleExist(id:String, db:Database?) throws -> Bool {
         return try isDetailExist(id: id, table: "battle", db: db)
     }
 
-    private func isDetailExist(id:String, table:String = "coop",db:Database) throws -> Bool {
+    private func isDetailExist(id:String, table:String = "coop",db:Database?) throws -> Bool {
         let sp3PrincipalId = id.getDetailUUID()
         let playedTime = id.base64DecodedString.extractedDate!
         let sp3Id = id.extractUserId()
@@ -211,9 +211,15 @@ extension SplatDatabase {
                     AND playedTime = ?
                     AND sp3Id = ?
                     """
+        var count = 0
 
-        let count = try Int.fetchOne(db, sql: sql, arguments: [sp3PrincipalId,playedTime, sp3Id])!
-
+        if let db = db{
+            count = try Int.fetchOne(db, sql: sql, arguments: [sp3PrincipalId,playedTime, sp3Id])!
+        }else{
+            try self.dbQueue.read { db in
+                count = try Int.fetchOne(db, sql: sql, arguments: [sp3PrincipalId,playedTime, sp3Id])!
+            }
+        }
         return count > 0
     }
 }
