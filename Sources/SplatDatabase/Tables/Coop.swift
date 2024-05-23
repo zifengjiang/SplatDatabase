@@ -189,10 +189,10 @@ extension SplatDatabase {
     }
 
     public func isBattleExist(id:String) throws -> Bool {
-        return try isDetailExist(id: id, kind: "battle")
+        return try isDetailExist(id: id, table: "battle")
     }
 
-    private func isDetailExist(id:String, kind:String = "coop") throws -> Bool {
+    private func isDetailExist(id:String, table:String = "coop") throws -> Bool {
         let sp3PrincipalId = id.getDetailUUID()
         let playedTime = id.base64DecodedString.extractedDate!
         let sp3Id = id.extractUserId()
@@ -200,8 +200,8 @@ extension SplatDatabase {
                     SELECT
                     COUNT(*)
                     FROM
-                    \(kind)
-                    JOIN account ON coop.accountId = account.id
+                    \(table)
+                    JOIN account ON \(table).accountId = account.id
                     WHERE
                     sp3PrincipalId = ?
                     AND playedTime = ?
