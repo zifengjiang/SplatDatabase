@@ -76,35 +76,40 @@ extension SplatDatabase {
     public func insertBattle(json:JSON) throws{
         let sp3CoopId = json["id"].stringValue.extractUserId()
         try insertAccount(id: sp3CoopId)
-        if try isBattleExist(id: json["id"].stringValue){
-            return
-        }
         try self.dbQueue.writeInTransaction { db in
             do{
-                    /// insert battle
-                try Battle(json:json, db: db).insert(db)
-                let battleId = db.lastInsertedRowID
-                    /// insert vsTeam
-                try VsTeam(json: json["myTeam"], battleId: battleId).insert(db)
-                let vsTeamId = db.lastInsertedRowID
-                for (_,element) in json["myTeam"]["players"].arrayValue.enumerated(){
-                    try Player(json: element, vsTeamId: vsTeamId, db: db).insert(db)
+                if try isBattleExist(id: json["id"].stringValue,db: db){
+                    return .commit
                 }
-                
-                for (_,element) in json["otherTeams"].arrayValue.enumerated(){
-                    try VsTeam(json: element, battleId: battleId).insert(db)
-                    let vsTeamId = db.lastInsertedRowID
-                    for (_,element) in element["players"].arrayValue.enumerated(){
-                        try Player(json: element, vsTeamId: vsTeamId, db: db).insert(db)
-                    }
-                }
+                try insertBattle(json: json, db: db)
                 return .commit
             } catch{
                 return .rollback
             }
         }
     }
+
+    public func insertBattle(json: JSON, db:Database) throws {
+            /// insert battle
+        try Battle(json:json, db: db).insert(db)
+        let battleId = db.lastInsertedRowID
+            /// insert vsTeam
+        try VsTeam(json: json["myTeam"], battleId: battleId).insert(db)
+        let vsTeamId = db.lastInsertedRowID
+        for (_,element) in json["myTeam"]["players"].arrayValue.enumerated(){
+            try Player(json: element, vsTeamId: vsTeamId, db: db).insert(db)
+        }
+
+        for (_,element) in json["otherTeams"].arrayValue.enumerated(){
+            try VsTeam(json: element, battleId: battleId).insert(db)
+            let vsTeamId = db.lastInsertedRowID
+            for (_,element) in element["players"].arrayValue.enumerated(){
+                try Player(json: element, vsTeamId: vsTeamId, db: db).insert(db)
+            }
+        }
+    }
 }
+
 
 extension SplatDatabase.Filter {
     func buildBattleQuery() -> SQLRequest<Row> {

@@ -74,52 +74,56 @@ extension SplatDatabase{
     public func insertCoop(json:JSON) throws{
         let sp3CoopId = json["id"].stringValue.extractUserId()
         try insertAccount(id: sp3CoopId)
-        if try self.isCoopExist(id: json["id"].stringValue){
-            return
-        }
         try self.dbQueue.writeInTransaction { db in
             do{
-                    /// insert coop
-                let coop = Coop(json:json, db: db)
-                try coop.insert(db)
-                let coopId = db.lastInsertedRowID
-                    /// insert weapons
-                for (index,element) in json["weapons"].arrayValue.enumerated(){
-                    try Weapon(imageMapId: getImageId(hash:element["image"]["url"].stringValue.getImageHash(), db: db), order: index,coopId: coopId).insert(db)
+                if try self.isCoopExist(id: json["id"].stringValue,db: db){
+                    return .commit
                 }
-                    /// insert coopPlayerResult
-                try CoopPlayerResult(json: json["myResult"], order: 0, coopId: coopId,db: db).insert(db)
-                var coopPlayerResultId = db.lastInsertedRowID
-                for (index,element) in json["myResult"]["weapons"].arrayValue.enumerated(){
-                    try Weapon(imageMapId: getImageId(hash:element["image"]["url"].stringValue.getImageHash(), db: db), order: index,coopPlayerResultId: coopPlayerResultId).insert(db)
-                }
-                try Player(json: json["myResult"]["player"], coopPlayerResultId: coopPlayerResultId, db: db).insert(db)
-                for (index,element) in json["memberResults"].arrayValue.enumerated(){
-                    try CoopPlayerResult(json: element, order: index + 1, coopId: coopId,db: db).insert(db)
-                    coopPlayerResultId = db.lastInsertedRowID
-                    for (index,element) in element["weapons"].arrayValue.enumerated(){
-                        try Weapon(imageMapId: getImageId(hash:element["image"]["url"].stringValue.getImageHash(), db: db), order: index,coopPlayerResultId: coopPlayerResultId).insert(db)
-                    }
-                    try Player(json: element["player"], coopPlayerResultId: coopPlayerResultId, db: db).insert(db)
-                }
-                    /// insert coopWaveResult
-                for (index,element) in json["waveResults"].arrayValue.enumerated(){
-                    try CoopWaveResult(json: element,bossId: index == 3 ? json["bossResult"]["boss"]["id"].string : nil, coopId: coopId,db: db).insert(db)
-                    let coopWaveResultId = db.lastInsertedRowID
-                    for (index,element) in element["specialWeapons"].arrayValue.enumerated(){
-                        try Weapon(imageMapId: getImageId(hash:element["image"]["url"].stringValue.getImageHash(), db: db), order: index,coopWaveResultId: coopWaveResultId).insert(db)
-                    }
-                }
-                    /// insert coopEnemyResult
-                for (_,element) in json["enemyResults"].arrayValue.enumerated(){
-                    try CoopEnemyResult(json: element, coopId: coopId,db: db).insert(db)
-                }
+                try insertCoop(json: json, db: db)
                 return .commit
             } catch{
                 print("insertCoop error \(error)")
                 print(json["id"].stringValue)
                 return .rollback
             }
+        }
+    }
+
+    public func insertCoop(json:JSON, db:Database) throws{
+            /// insert coop
+        let coop = Coop(json:json, db: db)
+        try coop.insert(db)
+        let coopId = db.lastInsertedRowID
+            /// insert weapons
+        for (index,element) in json["weapons"].arrayValue.enumerated(){
+            try Weapon(imageMapId: getImageId(hash:element["image"]["url"].stringValue.getImageHash(), db: db), order: index,coopId: coopId).insert(db)
+        }
+            /// insert coopPlayerResult
+        try CoopPlayerResult(json: json["myResult"], order: 0, coopId: coopId,db: db).insert(db)
+        var coopPlayerResultId = db.lastInsertedRowID
+        for (index,element) in json["myResult"]["weapons"].arrayValue.enumerated(){
+            try Weapon(imageMapId: getImageId(hash:element["image"]["url"].stringValue.getImageHash(), db: db), order: index,coopPlayerResultId: coopPlayerResultId).insert(db)
+        }
+        try Player(json: json["myResult"]["player"], coopPlayerResultId: coopPlayerResultId, db: db).insert(db)
+        for (index,element) in json["memberResults"].arrayValue.enumerated(){
+            try CoopPlayerResult(json: element, order: index + 1, coopId: coopId,db: db).insert(db)
+            coopPlayerResultId = db.lastInsertedRowID
+            for (index,element) in element["weapons"].arrayValue.enumerated(){
+                try Weapon(imageMapId: getImageId(hash:element["image"]["url"].stringValue.getImageHash(), db: db), order: index,coopPlayerResultId: coopPlayerResultId).insert(db)
+            }
+            try Player(json: element["player"], coopPlayerResultId: coopPlayerResultId, db: db).insert(db)
+        }
+            /// insert coopWaveResult
+        for (index,element) in json["waveResults"].arrayValue.enumerated(){
+            try CoopWaveResult(json: element,bossId: index == 3 ? json["bossResult"]["boss"]["id"].string : nil, coopId: coopId,db: db).insert(db)
+            let coopWaveResultId = db.lastInsertedRowID
+            for (index,element) in element["specialWeapons"].arrayValue.enumerated(){
+                try Weapon(imageMapId: getImageId(hash:element["image"]["url"].stringValue.getImageHash(), db: db), order: index,coopWaveResultId: coopWaveResultId).insert(db)
+            }
+        }
+            /// insert coopEnemyResult
+        for (_,element) in json["enemyResults"].arrayValue.enumerated(){
+            try CoopEnemyResult(json: element, coopId: coopId,db: db).insert(db)
         }
     }
 }
@@ -184,15 +188,15 @@ extension SplatDatabase {
 }
 
 extension SplatDatabase {
-    public func isCoopExist(id:String) throws -> Bool {
-        return try isDetailExist(id: id)
+    public func isCoopExist(id:String, db:Database) throws -> Bool {
+        return try isDetailExist(id: id, db: db)
     }
 
-    public func isBattleExist(id:String) throws -> Bool {
-        return try isDetailExist(id: id, table: "battle")
+    public func isBattleExist(id:String, db:Database) throws -> Bool {
+        return try isDetailExist(id: id, table: "battle", db: db)
     }
 
-    private func isDetailExist(id:String, table:String = "coop") throws -> Bool {
+    private func isDetailExist(id:String, table:String = "coop",db:Database) throws -> Bool {
         let sp3PrincipalId = id.getDetailUUID()
         let playedTime = id.base64DecodedString.extractedDate!
         let sp3Id = id.extractUserId()
@@ -207,9 +211,9 @@ extension SplatDatabase {
                     AND playedTime = ?
                     AND sp3Id = ?
                     """
-        let count = try self.dbQueue.read { db in
-            try Int.fetchOne(db, sql: sql, arguments: [sp3PrincipalId,playedTime, sp3Id])!
-        }
+
+        let count = try Int.fetchOne(db, sql: sql, arguments: [sp3PrincipalId,playedTime, sp3Id])!
+
         return count > 0
     }
 }
