@@ -74,8 +74,6 @@ public struct Battle:Codable, FetchableRecord, PersistableRecord{
 
 extension SplatDatabase {
     public func insertBattle(json:JSON) throws{
-        let sp3CoopId = json["id"].stringValue.extractUserId()
-        try insertAccount(id: sp3CoopId)
         try self.dbQueue.writeInTransaction { db in
             do{
                 if try isBattleExist(id: json["id"].stringValue,db: db){
@@ -90,6 +88,13 @@ extension SplatDatabase {
     }
 
     public func insertBattle(json: JSON, db:Database) throws {
+        let userId = json["id"].stringValue.extractUserId()
+        let userCount = try Int.fetchOne(db, sql: "SELECT COUNT(*) FROM account WHERE sp3Id = ?", arguments: [userId])!
+        if userCount == 0{
+            var account = Account()
+            account.sp3Id = userId
+            try account.insert(db)
+        }
             /// insert battle
         try Battle(json:json, db: db).insert(db)
         let battleId = db.lastInsertedRowID

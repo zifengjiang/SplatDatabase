@@ -72,8 +72,6 @@ public struct Coop: Codable, FetchableRecord, PersistableRecord {
 
 extension SplatDatabase{
     public func insertCoop(json:JSON) throws{
-        let sp3CoopId = json["id"].stringValue.extractUserId()
-        try insertAccount(id: sp3CoopId)
         try self.dbQueue.writeInTransaction { db in
             do{
                 if try self.isCoopExist(id: json["id"].stringValue,db: db){
@@ -90,6 +88,13 @@ extension SplatDatabase{
     }
 
     public func insertCoop(json:JSON, db:Database) throws{
+        let userId = json["id"].stringValue.extractUserId()
+        let userCount = try Int.fetchOne(db, sql: "SELECT COUNT(*) FROM account WHERE sp3Id = ?", arguments: [userId])!
+        if userCount == 0{
+            var account = Account()
+            account.sp3Id = userId
+            try account.insert(db)
+        }
             /// insert coop
         let coop = Coop(json:json, db: db)
         try coop.insert(db)
