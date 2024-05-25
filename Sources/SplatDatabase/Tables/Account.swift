@@ -11,7 +11,7 @@ public struct Account:Codable,FetchableRecord,PersistableRecord{
     public var sessionToken:String?
     public var lastRefresh:Date?
 
-    init(id: Int64? = nil, sp3Id: String? = nil, avatar: Data? = nil, name: String? = nil, code: String? = nil, sessionToken: String? = nil, lastRefresh: Date? = nil) {
+    public init(id: Int64? = nil, sp3Id: String? = nil, avatar: Data? = nil, name: String? = nil, code: String? = nil, sessionToken: String? = nil, lastRefresh: Date? = nil) {
         self.id = id
         self.sp3Id = sp3Id
         self.avatar = avatar
