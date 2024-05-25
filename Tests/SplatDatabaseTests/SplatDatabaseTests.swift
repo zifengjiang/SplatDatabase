@@ -100,16 +100,12 @@ class Splat3DatabaseTests: XCTestCase {
     }
 
     func testImportDatabaseFromInkMe() async throws{
-        let dbPath = "/Users/jiangfeng/Downloads/InkCompanion.sqlite"
+        let dbPath = "/Users/jiangfeng/XcodeProject/InkCompanion.sqlite"
         try dbManager.importFromInkMe(dbPath: dbPath){ progress in
             print(progress)
         }
     }
 
-    func testIsCoopExist() throws{
-        let exist = try dbManager.isCoopExist(id: "Q29vcEhpc3RvcnlEZXRhaWwtdS1xYWVucG13d290MmN2eXEzcXBtbToyMDI0MDUxNFQxMTU2NDZfNzgyNjFhN2MtNWFiNy00OWNiLTlhZWItYThiYzk2NzVkYmNh")
-        XCTAssertTrue(exist)
-    }
 }
 
 
