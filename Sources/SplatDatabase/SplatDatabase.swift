@@ -284,10 +284,6 @@ public class SplatDatabase {
             t.column("name",.text)
             t.column("code",.text).unique()
             t.column("sessionToken",.text)
-            t.column("bulletToken", .text)
-            t.column("accessToken", .text)
-            t.column("country", .text)
-            t.column("language", .text)
             t.column("lastRefresh", .datetime)
         }
 

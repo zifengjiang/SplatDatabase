@@ -32,7 +32,10 @@ public struct Coop: Codable, FetchableRecord, PersistableRecord {
     public init(json:JSON, db:Database){
         self.sp3PrincipalId = json["id"].stringValue.getDetailUUID()
         self.rule = json["rule"].stringValue
-        if let boss = json["boss"]["id"].string{
+        if var boss = json["boss"]["id"].string{
+            if boss == "Q29vcEVuZW15LTMx"{
+                boss = "Q29vcEVuZW15LTIz"
+            }
             self.boss = getImageId(for:boss ,db: db)
         }
         if let bossDefeated = json["bossResult"]["hasDefeatBoss"].bool{
