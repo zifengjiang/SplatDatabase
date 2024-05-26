@@ -1,10 +1,3 @@
-    //
-    //  File.swift
-    //
-    //
-    //  Created by 姜锋 on 5/12/24.
-    //
-
 import Foundation
 import GRDB
 
