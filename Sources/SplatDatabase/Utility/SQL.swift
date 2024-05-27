@@ -169,6 +169,7 @@ CREATE VIEW "coop_group_status_view" AS SELECT
     coop.accountId,
     coop.GroupID,
     coop.'rule',
+    coop.suppliedWeapon,
     MIN(coop.playedTime) AS startTime,
     MAX(coop.playedTime) AS endTime,
     AVG(coopPlayerResult.defeatEnemyCount) AS avg_defeatEnemyCount,
