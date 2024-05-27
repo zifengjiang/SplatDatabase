@@ -61,7 +61,6 @@ public class SplatDatabase {
 
         migrator.registerMigration("createIndexes2") { db in
             try db.execute(literal: """
-                    CREATE INDEX idx_coop_view_accountId_playedTime ON coop_view(accountId, playedTime);
                     CREATE INDEX idx_coop_view_GroupID ON coop_view(GroupID);
                     CREATE INDEX idx_coopPlayerResult_coopId ON coopPlayerResult(coopId);
                     CREATE INDEX idx_player_coopPlayerResultId ON player(coopPlayerResultId);
