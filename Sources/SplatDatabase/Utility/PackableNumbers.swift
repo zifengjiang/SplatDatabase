@@ -51,6 +51,18 @@ public struct Packable:Codable {
     }
 }
 
+extension PackableNumbers {
+        // 自定义运算符，对两个 UInt64 进行位运算，实现您想要的效果
+    static func + (lhs: PackableNumbers, rhs: PackableNumbers) -> PackableNumbers {
+        var resultNumbers = [UInt16]()
+        let packed1 = lhs.pack()
+        let packed2 = rhs.pack()
+        let packedResult = packed1 &+ packed2 // 通过位运算实现相加
+        let unpackedResult = PackableNumbers.unpack(packedResult)
+        return unpackedResult
+    }
+}
+
 extension Packable: DatabaseValueConvertible {
         /// 将 PackableNumbers 转换为 DatabaseValue
     public var databaseValue: DatabaseValue {

@@ -165,11 +165,13 @@ let last_500_battle_sql = """
 """
 
 let coop_group_status_view = """
-CREATE VIEW "coop_group_status_view" AS SELECT
+CREATE VIEW "coop_group_status_view" AS
+SELECT
     coop.accountId,
     coop.GroupID,
     coop.'rule',
     coop.suppliedWeapon,
+    stageId,
     MIN(coop.playedTime) AS startTime,
     MAX(coop.playedTime) AS endTime,
     AVG(coopPlayerResult.defeatEnemyCount) AS avg_defeatEnemyCount,
@@ -178,15 +180,20 @@ CREATE VIEW "coop_group_status_view" AS SELECT
     AVG(coopPlayerResult.goldenDeliverCount) AS avg_goldenDeliverCount,
     AVG(coopPlayerResult.rescueCount) AS avg_rescueCount,
     AVG(coopPlayerResult.rescuedCount) AS avg_rescuedCount,
+    COALESCE(SUM(coop.goldScale), 0) as goldScale,
+    COALESCE(SUM(coop.silverScale), 0) as silverScale,
+    COALESCE(SUM(coop.bronzeScale), 0) as bronzeScale,
+    SUM(CASE WHEN coop.wave = 3 AND coop.'rule' <> 'TEAM_CONTEST' THEN 1 WHEN coop.wave = 5 AND coop.'rule' = 'TEAM_CONTEST' THEN 1 ELSE 0 END) as clear,
+    SUM(CASE WHEN coop.wave < 0 THEN 1 ELSE 0 END) as disconnect,
     MAX(coop.afterGradePoint) as highestScore,
     MAX(coop.egg) as highestEgg,
     COUNT(*) AS count
-  FROM
+FROM
     coop_view AS coop
-    JOIN coopPlayerResult ON coop.id = coopPlayerResult.coopId
-  WHERE
+JOIN coopPlayerResult ON coop.id = coopPlayerResult.coopId
+WHERE
     coopPlayerResult.'order' = 0
-  GROUP BY
+GROUP BY
     coop.accountId,
     coop.GroupID
 """
