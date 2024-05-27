@@ -75,7 +75,7 @@ FROM GroupingCoop
 """
 
 let group_status_sql = """
-  SELECT * FROM  'coop_group_status_view' WHERE ('accountId' = ?) AND ('GroupID' = ?)
+  SELECT * FROM  coop_group_status_view WHERE (accountId = ?) AND (GroupID = ?)
 """
 
 let wave_result_sql = """
