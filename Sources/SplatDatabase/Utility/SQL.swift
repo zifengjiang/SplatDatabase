@@ -24,7 +24,7 @@ let enemy_status_sql = """
              0 AS totalDefeatCount
       FROM coop c
       JOIN GroupedCoop gc ON c.id = gc.id
-      WHERE c.boss IS NOT NULL
+      WHERE c.bossDefeated IS NOT NULL
       GROUP BY c.boss
   ),
   CombinedResults AS (
@@ -45,7 +45,7 @@ let weapon_status_sql = """
   JOIN coopPlayerResult ON coop_view.id = coopPlayerResult.coopId
   JOIN weapon ON coopPlayerResult.id = weapon.coopPlayerResultId
   JOIN imageMap ON weapon.imageMapId = imageMap.id
-  WHERE coopPlayerResult.'order' = 0 AND accountId = 1 AND groupId = 192
+  WHERE coopPlayerResult.'order' = 0 AND accountId = ? AND groupId = ?
   GROUP BY weapon.imageMapId
   ORDER by weapon_id DESC
 """
@@ -190,7 +190,7 @@ CREATE VIEW "coop_group_status_view" AS SELECT
     coop.GroupID
 """
 
-public enum SQL {
+public enum SplatDatabaseSQL {
     case enemy_status(accountId: Int, GroupID: Int)
     case weapon_status(accountId: Int, GroupID: Int)
     case coop_view
