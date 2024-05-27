@@ -53,7 +53,7 @@ public class SplatDatabase {
                     CREATE INDEX idx_coopEnemyResult_coopId ON coopEnemyResult (coopId);
                     CREATE INDEX idx_imageMap_id ON imageMap (id);
                     CREATE INDEX idx_coopPlayerResult_coopId ON coopPlayerResult(coopId);
-                    CREATE INDEX idx_coopPlayerResult_order ON coopPlayerResult(order);
+                    CREATE INDEX idx_coopPlayerResult_order ON coopPlayerResult('order');
                     CREATE INDEX idx_weapon_coopPlayerResultId ON weapon(coopPlayerResultId);
                     CREATE INDEX idx_coopWaveResult_coopId ON coopWaveResult(coopId);
                 """)
