@@ -10,10 +10,6 @@ public struct Account:Codable,FetchableRecord,PersistableRecord{
     public var code:String?
     public var sessionToken:String?
     public var lastRefresh:Date?
-    
-    public enum Columns: String, ColumnExpression {
-        case id, sp3Id, avatar, name, code, sessionToken, lastRefresh
-    }
 
     public init(sp3Id: String? = nil, avatar: Data? = nil, name: String? = nil, code: String? = nil, sessionToken: String? = nil, lastRefresh: Date? = nil) {
         self.sp3Id = sp3Id

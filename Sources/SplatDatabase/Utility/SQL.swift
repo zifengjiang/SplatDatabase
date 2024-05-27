@@ -40,36 +40,38 @@ let enemy_status_sql = """
 """
 
 let weapon_status_sql = """
-  SELECT imageMap."name" AS weapon_id, COUNT(*) AS count
+  SELECT imageMap.'name' AS weapon_id, COUNT(*) AS count
   FROM coop_view
   JOIN coopPlayerResult ON coop_view.id = coopPlayerResult.coopId
   JOIN weapon ON coopPlayerResult.id = weapon.coopPlayerResultId
   JOIN imageMap ON weapon.imageMapId = imageMap.id
-  WHERE coopPlayerResult."order" = 0 AND accountId = ? AND groupId = ?
+  WHERE coopPlayerResult.'order' = 0 AND accountId = 1 AND groupId = 192
   GROUP BY weapon.imageMapId
   ORDER by weapon_id DESC
 """
 
 let coop_view_sql = """
 CREATE VIEW coop_view AS
-  WITH OrderedCoop AS (
-      SELECT *,
-             LAG(rule) OVER (PARTITION BY accountId ORDER BY playedTime) AS prev_rule,
-             LAG(stageId) OVER (PARTITION BY accountId ORDER BY playedTime) AS prev_stageId,
-             LAG(suppliedWeapon) OVER (PARTITION BY accountId ORDER BY playedTime) AS prev_suppliedWeapon
-      FROM coop
-  ),
-  GroupingCoop AS (
-      SELECT *,
-             CASE
-                 WHEN rule = prev_rule AND stageId = prev_stageId AND suppliedWeapon = prev_suppliedWeapon THEN 0
-                 ELSE 1
-             END AS is_new_group
-      FROM OrderedCoop
-  )
-  SELECT *,
-         SUM(is_new_group) OVER (PARTITION BY accountId ORDER BY playedTime) AS GroupID
-  FROM GroupingCoop
+WITH OrderedCoop AS (
+    SELECT *,
+           LAG(rule) OVER (PARTITION BY accountId ORDER BY playedTime) AS prev_rule,
+           LAG(stageId) OVER (PARTITION BY accountId ORDER BY playedTime) AS prev_stageId,
+           LAG(suppliedWeapon) OVER (PARTITION BY accountId ORDER BY playedTime) AS prev_suppliedWeapon
+    FROM coop
+),
+GroupingCoop AS (
+    SELECT *,
+           CASE
+               WHEN rule = prev_rule AND stageId = prev_stageId AND suppliedWeapon = prev_suppliedWeapon THEN 0
+
+                WHEN rule = prev_rule AND rule = 'BIG_RUN' AND suppliedWeapon = prev_suppliedWeapon THEN 0
+               ELSE 1
+           END AS is_new_group
+    FROM OrderedCoop
+)
+SELECT *,
+       SUM(is_new_group) OVER (PARTITION BY accountId ORDER BY playedTime) AS GroupID
+FROM GroupingCoop
 """
 
 let group_status_sql = """
@@ -91,7 +93,7 @@ let group_status_sql = """
     coop_view AS coop
     JOIN coopPlayerResult ON coop.id = coopPlayerResult.coopId
   WHERE
-    coopPlayerResult. "order" = 0
+    coopPlayerResult.'order' = 0
     AND accountId = ?
     AND GroupID = ?
   GROUP BY
@@ -156,10 +158,36 @@ let last_500_battle_sql = """
     FROM
         battle
     WHERE
-        battle.accountId = ? AND battle."mode" != 'PRIVATE'
+        battle.accountId = ? AND battle.'mode' != 'PRIVATE'
     ORDER BY
         battle.playedTime DESC
     LIMIT 500
+"""
+
+let coop_group_status_view = """
+CREATE VIEW "coop_group_status_view" AS SELECT
+    coop.accountId,
+    coop.GroupID,
+    coop.'rule',
+    MIN(coop.playedTime) AS startTime,
+    MAX(coop.playedTime) AS endTime,
+    AVG(coopPlayerResult.defeatEnemyCount) AS avg_defeatEnemyCount,
+    AVG(coopPlayerResult.deliverCount) AS avg_deliverCount,
+    AVG(coopPlayerResult.goldenAssistCount) AS avg_goldenAssistCount,
+    AVG(coopPlayerResult.goldenDeliverCount) AS avg_goldenDeliverCount,
+    AVG(coopPlayerResult.rescueCount) AS avg_rescueCount,
+    AVG(coopPlayerResult.rescuedCount) AS avg_rescuedCount,
+    MAX(coop.afterGradePoint) as highestScore,
+    MAX(coop.egg) as highestEgg,
+    COUNT(*) AS count
+  FROM
+    coop_view AS coop
+    JOIN coopPlayerResult ON coop.id = coopPlayerResult.coopId
+  WHERE
+    coopPlayerResult.'order' = 0
+  GROUP BY
+    coop.accountId,
+    coop.GroupID
 """
 
 public enum SQL {

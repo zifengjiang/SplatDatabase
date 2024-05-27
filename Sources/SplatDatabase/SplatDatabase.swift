@@ -42,6 +42,19 @@ public class SplatDatabase {
             try self.updateImageMap(db: db) // 你可能需要类似修改 updateImageMap 方法
         }
 
+        migrator.registerMigration("coop_group_status_view") { db in
+            try db.execute(sql: coop_group_status_view)
+        }
+
+        migrator.registerMigration("createIndexes") { db in
+            try db.execute(sql: """
+                    CREATE INDEX idx_coop_accountId ON coop (accountId);
+                    CREATE INDEX idx_coop_playedTime ON coop (playedTime);
+                    CREATE INDEX idx_coopEnemyResult_coopId ON coopEnemyResult (coopId);
+                    CREATE INDEX idx_imageMap_id ON imageMap (id);
+                """)
+        }
+
         return migrator
     }
 
