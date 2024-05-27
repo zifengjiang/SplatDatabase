@@ -75,30 +75,7 @@ FROM GroupingCoop
 """
 
 let group_status_sql = """
-  SELECT
-    coop.accountId,
-    coop.GroupID,
-    MIN(coop.playedTime) AS startTime,
-    MAX(coop.playedTime) AS endTime,
-    AVG(coopPlayerResult.defeatEnemyCount) AS avg_defeatEnemyCount,
-    AVG(coopPlayerResult.deliverCount) AS avg_deliverCount,
-    AVG(coopPlayerResult.goldenAssistCount) AS avg_goldenAssistCount,
-    AVG(coopPlayerResult.goldenDeliverCount) AS avg_goldenDeliverCount,
-    AVG(coopPlayerResult.rescueCount) AS avg_rescueCount,
-    AVG(coopPlayerResult.rescuedCount) AS avg_rescuedCount,
-    MAX(coop.afterGradePoint) as highestScore,
-    MAX(coop.egg) as highestEgg,
-    COUNT(*) AS count
-  FROM
-    coop_view AS coop
-    JOIN coopPlayerResult ON coop.id = coopPlayerResult.coopId
-  WHERE
-    coopPlayerResult.'order' = 0
-    AND accountId = ?
-    AND GroupID = ?
-  GROUP BY
-    coop.accountId,
-    coop.GroupID;
+  SELECT * FROM  'coop_group_status_view' WHERE ('accountId' = ?) AND ('GroupID' = ?)
 """
 
 let wave_result_sql = """
