@@ -59,6 +59,18 @@ public class SplatDatabase {
                 """)
         }
 
+        migrator.registerMigration("createIndexes2") { db in
+            try db.execute(literal: """
+                    CREATE INDEX idx_coop_view_accountId_playedTime ON coop_view(accountId, playedTime);
+                    CREATE INDEX idx_coop_view_GroupID ON coop_view(GroupID);
+                    CREATE INDEX idx_coopPlayerResult_coopId ON coopPlayerResult(coopId);
+                    CREATE INDEX idx_player_coopPlayerResultId ON player(coopPlayerResultId);
+                    CREATE INDEX idx_imageMap_id ON imageMap(id);
+                    CREATE INDEX idx_coop_boss ON coop(boss);
+                    CREATE INDEX idx_coop_stageId ON coop(stageId);
+""")
+        }
+
         return migrator
     }
 
