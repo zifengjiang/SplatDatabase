@@ -79,15 +79,13 @@ public struct Coop: Codable, FetchableRecord, PersistableRecord {
 extension Coop: PreComputable {
     public static func create(from db: Database, identifier: Int64) throws -> Coop? {
         var row = try Coop.fetchOne(db, key: identifier)
-        try SplatDatabase.shared.dbQueue.read { db in
-            if var row = row {
-                row.suppliedWeapons = Array(0..<4).compactMap { getImageName(by: row.suppliedWeapon[$0], db: db)}
-                if let boss = row.boss{
-                    row.bossName = try ImageMap.fetchOne(db, key: boss)?.name
-                }
-                row.stageImage = try ImageMap.fetchOne(db, key: row.stageId)?.name
-                row.stageName = try ImageMap.fetchOne(db, key: row.stageId)?.nameId
+        if var row = row {
+            row.suppliedWeapons = Array(0..<4).compactMap { getImageName(by: row.suppliedWeapon[$0], db: db)}
+            if let boss = row.boss{
+                row.bossName = try ImageMap.fetchOne(db, key: boss)?.name
             }
+            row.stageImage = try ImageMap.fetchOne(db, key: row.stageId)?.name
+            row.stageName = try ImageMap.fetchOne(db, key: row.stageId)?.nameId
         }
         return row
     }
