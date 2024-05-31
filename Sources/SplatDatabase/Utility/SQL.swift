@@ -85,9 +85,9 @@ let wave_result_sql = """
           ELSE eventWave
       END AS eventWaveGroup,
       waterLevel,
-      AVG(deliverNorm) AS avg_deliverNorm,
-      AVG(goldenPopCount) AS avg_goldenPopCount,
-      AVG(teamDeliverCount) AS avg_teamDeliverCount,
+      AVG(deliverNorm) AS deliverNorm,
+      AVG(goldenPopCount) AS goldenPopCount,
+      AVG(teamDeliverCount) AS teamDeliverCount,
       COUNT(*) as count
   FROM
       coopWaveResult
