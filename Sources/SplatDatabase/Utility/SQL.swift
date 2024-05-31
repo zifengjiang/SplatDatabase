@@ -47,7 +47,7 @@ let weapon_status_sql = """
   JOIN imageMap ON weapon.imageMapId = imageMap.id
   WHERE coopPlayerResult.'order' = 0 AND accountId = ? AND groupId = ?
   GROUP BY weapon.imageMapId
-  ORDER by weapon_id DESC
+  ORDER by weaponId DESC
 """
 
 let coop_view_sql = """
