@@ -126,7 +126,7 @@ extension Coop: PreComputable {
 
 extension SplatDatabase{
     public func insertCoop(json:JSON) throws {
-        self.dbQueue.asyncWrite { db in
+        self.dbQueue.customAsyncWrite { db in
             do{
                 if try self.isCoopExist(id: json["id"].stringValue,db: db){
                     return
@@ -198,7 +198,7 @@ extension SplatDatabase{
     }
 
     public func insertCoops(jsons:[JSON], checkExist:Bool = true) throws {
-        self.dbQueue.asyncWrite { db in
+        self.dbQueue.customAsyncWrite { db in
             do{
                 for json in jsons{
                     if checkExist{
