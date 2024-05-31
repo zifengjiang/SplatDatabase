@@ -1,6 +1,7 @@
 import Foundation
 import GRDB
 import SwiftyJSON
+import os
 
 public struct Coop: Codable, FetchableRecord, PersistableRecord {
     public var id: Int64?
@@ -124,15 +125,71 @@ extension Coop: PreComputable {
 
 
 extension SplatDatabase{
-    public func insertCoop(json:JSON) throws{
-        try self.dbQueue.writeInTransaction { db in
+    public func insertCoop(json:JSON) throws {
+        self.dbQueue.asyncWrite { db in
             do{
                 if try self.isCoopExist(id: json["id"].stringValue,db: db){
-                    return .commit
+                    return
                 }
-                try insertCoop(json: json, db: db)
-                return .commit
+                try self.insertCoop(json: json, db: db)
             } catch{
+                print("insertCoop error \(error)")
+                print(json["id"].stringValue)
+            }
+        } completion: { _, error in
+            if case let .failure(error) = error {
+                os_log("Database Error: [saveJob] \(error.localizedDescription)")
+            }
+        }
+    }
+
+    public func insertCoop(json:JSON, db:Database) throws {
+        try db.inTransaction {
+            do{
+                let userId = json["id"].stringValue.extractUserId()
+                let userCount = try Int.fetchOne(db, sql: "SELECT COUNT(*) FROM account WHERE sp3Id = ?", arguments: [userId])!
+                if userCount == 0{
+                    var account = Account()
+                    account.sp3Id = userId
+                    try account.insert(db)
+                }
+                    /// insert coop
+                let coop = Coop(json:json, db: db)
+                try coop.insert(db)
+                let coopId = db.lastInsertedRowID
+                    /// insert weapons
+                for (index,element) in json["weapons"].arrayValue.enumerated(){
+                    try Weapon(imageMapId: getImageId(hash:element["image"]["url"].stringValue.getImageHash(), db: db), order: index,coopId: coopId).insert(db)
+                }
+                    /// insert coopPlayerResult
+                try CoopPlayerResult(json: json["myResult"], order: 0, coopId: coopId,db: db).insert(db)
+                var coopPlayerResultId = db.lastInsertedRowID
+                for (index,element) in json["myResult"]["weapons"].arrayValue.enumerated(){
+                    try Weapon(imageMapId: getImageId(hash:element["image"]["url"].stringValue.getImageHash(), db: db), order: index,coopPlayerResultId: coopPlayerResultId).insert(db)
+                }
+                try Player(json: json["myResult"]["player"], coopPlayerResultId: coopPlayerResultId, db: db).insert(db)
+                for (index,element) in json["memberResults"].arrayValue.enumerated(){
+                    try CoopPlayerResult(json: element, order: index + 1, coopId: coopId,db: db).insert(db)
+                    coopPlayerResultId = db.lastInsertedRowID
+                    for (index,element) in element["weapons"].arrayValue.enumerated(){
+                        try Weapon(imageMapId: getImageId(hash:element["image"]["url"].stringValue.getImageHash(), db: db), order: index,coopPlayerResultId: coopPlayerResultId).insert(db)
+                    }
+                    try Player(json: element["player"], coopPlayerResultId: coopPlayerResultId, db: db).insert(db)
+                }
+                    /// insert coopWaveResult
+                for (index,element) in json["waveResults"].arrayValue.enumerated(){
+                    try CoopWaveResult(json: element,bossId: index == 3 ? json["bossResult"]["boss"]["id"].string : nil, coopId: coopId,db: db).insert(db)
+                    let coopWaveResultId = db.lastInsertedRowID
+                    for (index,element) in element["specialWeapons"].arrayValue.enumerated(){
+                        try Weapon(imageMapId: getImageId(hash:element["image"]["url"].stringValue.getImageHash(), db: db), order: index,coopWaveResultId: coopWaveResultId).insert(db)
+                    }
+                }
+                    /// insert coopEnemyResult
+                for (_,element) in json["enemyResults"].arrayValue.enumerated(){
+                    try CoopEnemyResult(json: element, coopId: coopId,db: db).insert(db)
+                }
+                return .commit
+            }catch{
                 print("insertCoop error \(error)")
                 print(json["id"].stringValue)
                 return .rollback
@@ -140,48 +197,22 @@ extension SplatDatabase{
         }
     }
 
-    public func insertCoop(json:JSON, db:Database) throws {
-        let userId = json["id"].stringValue.extractUserId()
-        let userCount = try Int.fetchOne(db, sql: "SELECT COUNT(*) FROM account WHERE sp3Id = ?", arguments: [userId])!
-        if userCount == 0{
-            var account = Account()
-            account.sp3Id = userId
-            try account.insert(db)
-        }
-            /// insert coop
-        let coop = Coop(json:json, db: db)
-        try coop.insert(db)
-        let coopId = db.lastInsertedRowID
-            /// insert weapons
-        for (index,element) in json["weapons"].arrayValue.enumerated(){
-            try Weapon(imageMapId: getImageId(hash:element["image"]["url"].stringValue.getImageHash(), db: db), order: index,coopId: coopId).insert(db)
-        }
-            /// insert coopPlayerResult
-        try CoopPlayerResult(json: json["myResult"], order: 0, coopId: coopId,db: db).insert(db)
-        var coopPlayerResultId = db.lastInsertedRowID
-        for (index,element) in json["myResult"]["weapons"].arrayValue.enumerated(){
-            try Weapon(imageMapId: getImageId(hash:element["image"]["url"].stringValue.getImageHash(), db: db), order: index,coopPlayerResultId: coopPlayerResultId).insert(db)
-        }
-        try Player(json: json["myResult"]["player"], coopPlayerResultId: coopPlayerResultId, db: db).insert(db)
-        for (index,element) in json["memberResults"].arrayValue.enumerated(){
-            try CoopPlayerResult(json: element, order: index + 1, coopId: coopId,db: db).insert(db)
-            coopPlayerResultId = db.lastInsertedRowID
-            for (index,element) in element["weapons"].arrayValue.enumerated(){
-                try Weapon(imageMapId: getImageId(hash:element["image"]["url"].stringValue.getImageHash(), db: db), order: index,coopPlayerResultId: coopPlayerResultId).insert(db)
+    public func insertCoops(jsons:[JSON]) throws {
+        self.dbQueue.asyncWrite { db in
+            do{
+                for json in jsons{
+                    if try self.isCoopExist(id: json["id"].stringValue,db: db){
+                        continue
+                    }
+                    try self.insertCoop(json: json, db: db)
+                }
+            } catch{
+                print("insertCoop error \(error)")
             }
-            try Player(json: element["player"], coopPlayerResultId: coopPlayerResultId, db: db).insert(db)
-        }
-            /// insert coopWaveResult
-        for (index,element) in json["waveResults"].arrayValue.enumerated(){
-            try CoopWaveResult(json: element,bossId: index == 3 ? json["bossResult"]["boss"]["id"].string : nil, coopId: coopId,db: db).insert(db)
-            let coopWaveResultId = db.lastInsertedRowID
-            for (index,element) in element["specialWeapons"].arrayValue.enumerated(){
-                try Weapon(imageMapId: getImageId(hash:element["image"]["url"].stringValue.getImageHash(), db: db), order: index,coopWaveResultId: coopWaveResultId).insert(db)
+        } completion: { _, error in
+            if case let .failure(error) = error {
+                os_log("Database Error: [saveJob] \(error.localizedDescription)")
             }
-        }
-            /// insert coopEnemyResult
-        for (_,element) in json["enemyResults"].arrayValue.enumerated(){
-            try CoopEnemyResult(json: element, coopId: coopId,db: db).insert(db)
         }
     }
 }
