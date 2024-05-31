@@ -86,6 +86,7 @@ extension Coop: PreComputable {
             }
             row.stageImage = try ImageMap.fetchOne(db, key: row.stageId)?.name
             row.stageName = try ImageMap.fetchOne(db, key: row.stageId)?.nameId
+            return row
         }
         return row
     }
