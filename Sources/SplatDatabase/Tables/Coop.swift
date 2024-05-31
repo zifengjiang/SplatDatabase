@@ -35,6 +35,36 @@ public struct Coop: Codable, FetchableRecord, PersistableRecord {
     public var stageImage:String? = nil
     public var stageName: String? = nil
 
+    // MARK: - CodingKeys
+    enum CodingKeys: String, CodingKey {
+        case id
+        case sp3PrincipalId
+        case rule
+        case boss
+        case suppliedWeapon
+        case egg
+        case powerEgg
+        case bossDefeated
+        case wave
+        case stageId
+        case afterGrade
+        case afterGradePoint
+        case afterGradeDiff
+        case preDetailId
+        case goldScale
+        case silverScale
+        case bronzeScale
+        case jobPoint
+        case jobScore
+        case jobRate
+        case jobBonus
+        case playedTime
+        case dangerRate
+        case smellMeter
+        case accountId
+            // 这里不包括计算属性
+    }
+
     public init(json:JSON, db:Database){
         self.sp3PrincipalId = json["id"].stringValue.getDetailUUID()
         self.rule = json["rule"].stringValue

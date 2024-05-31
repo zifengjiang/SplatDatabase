@@ -12,6 +12,15 @@ public struct CoopEnemyResult:Codable, FetchableRecord, PersistableRecord{
     public var enemyImage: String? = nil
     public var enemyName: String? = nil
 
+    // MARK: - CodingKeys
+    enum CodingKeys: String, CodingKey {
+        case enemyId
+        case defeatCount
+        case teamDefeatCount
+        case popCount
+        case coopId
+    }
+
     public init(json:JSON, coopId:Int64, db:Database){
         self.coopId = coopId
         self.enemyId = getImageId(for:json["enemy"]["id"].stringValue, db: db)

@@ -16,6 +16,18 @@ public struct CoopWaveResult:Codable, FetchableRecord,PersistableRecord{
     public var eventName:String? = nil
     public var usedSpecialWeapons:[String]? = nil
 
+    // MARK: - CodingKeys
+    enum CodingKeys: String, CodingKey {
+        case id
+        case waveNumber
+        case waterLevel
+        case eventWave
+        case deliverNorm
+        case goldenPopCount
+        case teamDeliverCount
+        case coopId
+    }
+
     public static let databaseTableName = "coopWaveResult"
     
     public init(json: JSON, bossId:String?, coopId: Int64? = nil, db:Database) {

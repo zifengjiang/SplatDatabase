@@ -18,6 +18,19 @@ public struct CoopPlayerResult:Codable, FetchableRecord,PersistableRecord{
     public var specialWeaponName: String? = nil
     public var weapons:[String]? = nil
 
+    // MARK: - CodingKeys
+    enum CodingKeys: String, CodingKey {
+        case order
+        case specialWeaponId
+        case defeatEnemyCount
+        case deliverCount
+        case goldenAssistCount
+        case goldenDeliverCount
+        case rescueCount
+        case rescuedCount
+        case coopId
+    }
+
     public init(json:JSON, order:Int, coopId:Int64,db:Database){
         self.coopId = coopId
         self.order = order
