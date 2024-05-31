@@ -2,13 +2,13 @@ import Foundation
 import GRDB
 import Combine
 
-protocol PreComputable: FetchableRecord {
+public protocol PreComputable: FetchableRecord {
     associatedtype Identifier
     static func create(from db: Database, identifier: Identifier) throws -> Self?
 }
 
 extension PreComputable {
-    static func fetch(identifier: Identifier) -> AnyPublisher<Self?, Error>{
+    public static func fetch(identifier: Identifier) -> AnyPublisher<Self?, Error>{
         ValueObservation
             .tracking { db in
                 try Self.create(from: db, identifier: identifier)
