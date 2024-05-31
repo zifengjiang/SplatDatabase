@@ -73,7 +73,7 @@ extension CoopPlayerResult: PreComputable {
                                                 coopPlayerResultId = ?
                                             ORDER BY
                                                 weapon.'order'
-            """, arguments: [identifier])
+            """, arguments: [rows[index].id])
         }
         return rows
     }
