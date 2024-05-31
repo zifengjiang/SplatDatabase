@@ -8,7 +8,8 @@ public struct CoopEnemyResult:Codable, FetchableRecord, PersistableRecord{
     public var teamDefeatCount:Int
     public var popCount:Int
     public var coopId:Int64?
-
+    
+    // MARK: - computed properties
     public var enemyImage: String? = nil
     public var enemyName: String? = nil
 

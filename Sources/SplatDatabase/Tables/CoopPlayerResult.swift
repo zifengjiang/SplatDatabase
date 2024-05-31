@@ -13,7 +13,8 @@ public struct CoopPlayerResult:Codable, FetchableRecord,PersistableRecord{
     public var rescueCount:Int
     public var rescuedCount:Int
     public var coopId:Int64?
-
+    
+    // MARK: - computed properties
     public var player: Player? = nil
     public var specialWeaponName: String? = nil
     public var weapons:[String]? = nil

@@ -13,6 +13,7 @@ public struct CoopWaveResult:Codable, FetchableRecord,PersistableRecord{
     
     public var coopId: Int64?
 
+    // MARK: - computed properties
     public var eventName:String? = nil
     public var usedSpecialWeapons:[String]? = nil
 

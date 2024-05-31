@@ -7,7 +7,7 @@ public struct Player: Codable, FetchableRecord, PersistableRecord {
     public var id: Int64?
     public var isCoop: Bool
 
-        // Common Attributes
+    // Common Attributes
     public var sp3PrincipalId: String
     public var byname: String
     public var name: String
@@ -16,11 +16,13 @@ public struct Player: Codable, FetchableRecord, PersistableRecord {
     @Packable public var nameplate: PackableNumbers
     @Packable public var nameplateTextColor: PackableNumbers
 
-        // Coop Attributes
+    // Coop Attributes
     public var uniformId: UInt16?
+
+    // MARK: - computed properties
     public var uniformName: String? = nil
 
-        // Battle Attributes
+    // Battle Attributes
     public var paint: Int?
     public var weaponId: UInt16?
     @Packable public var headGear: PackableNumbers
@@ -31,21 +33,51 @@ public struct Player: Codable, FetchableRecord, PersistableRecord {
     public var festGrade: String?
     public var isMyself: Bool?
 
-        // Battle Result Attributes
+    // Battle Result Attributes
     public var kill: Int?
     public var death: Int?
     public var assist: Int?
     public var special: Int?
     public var noroshiTry: Int?
 
-        // References to vsTeam
+    // References to vsTeam
     public var vsTeamId: Int64?
     public var coopPlayerResultId: Int64?
 
-        // Database table name
+    // Database table name
     public static let databaseTableName = "player"
 
-        /// init from json
+    // MARK: - CodingKeys
+    enum CodingKeys: String, CodingKey {
+        case id
+        case isCoop
+        case sp3PrincipalId
+        case byname
+        case name
+        case nameId
+        case species
+        case nameplate
+        case nameplateTextColor
+        case uniformId
+        case paint
+        case weaponId
+        case headGear
+        case clothingGear
+        case shoesGear
+        case crown
+        case festDragonCert
+        case festGrade
+        case isMyself
+        case kill
+        case death
+        case assist
+        case special
+        case noroshiTry
+        case vsTeamId
+        case coopPlayerResultId
+    }
+
+    // MARK: - init from json
     public init(json: JSON, vsTeamId: Int64? = nil, coopPlayerResultId: Int64? = nil, db:Database) {
         self.coopPlayerResultId = coopPlayerResultId
         self.vsTeamId = vsTeamId
@@ -106,7 +138,7 @@ extension Player: PreComputable {
 
     public static func create(from db: Database, identifier: (Int64, String)) throws -> Player? {
         let (id, column) = identifier
-        var row = try Player
+        let row = try Player
             .filter(Column(column) == id)
             .fetchOne(db)
 
