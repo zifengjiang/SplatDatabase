@@ -197,12 +197,14 @@ extension SplatDatabase{
         }
     }
 
-    public func insertCoops(jsons:[JSON]) throws {
+    public func insertCoops(jsons:[JSON], checkExist:Bool = true) throws {
         self.dbQueue.asyncWrite { db in
             do{
                 for json in jsons{
-                    if try self.isCoopExist(id: json["id"].stringValue,db: db){
-                        continue
+                    if checkExist{
+                        if try self.isCoopExist(id: json["id"].stringValue,db: db){
+                            continue
+                        }
                     }
                     try self.insertCoop(json: json, db: db)
                 }
