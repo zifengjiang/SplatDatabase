@@ -40,7 +40,7 @@ let enemy_status_sql = """
 """
 
 let weapon_status_sql = """
-  SELECT imageMap.'name' AS weapon_id, COUNT(*) AS count
+  SELECT imageMap.'name' AS weaponId, COUNT(*) AS count
   FROM coop_view
   JOIN coopPlayerResult ON coop_view.id = coopPlayerResult.coopId
   JOIN weapon ON coopPlayerResult.id = weapon.coopPlayerResultId
