@@ -29,6 +29,12 @@ public struct Coop: Codable, FetchableRecord, PersistableRecord {
     public var smellMeter:Int?
     public var accountId:Int64
 
+    // MARK: - computed properties
+    public var suppliedWeapons: [String]? = nil
+    public var bossName: String? = nil
+    public var stageImage:String? = nil
+    public var stageName: String? = nil
+
     public init(json:JSON, db:Database){
         self.sp3PrincipalId = json["id"].stringValue.getDetailUUID()
         self.rule = json["rule"].stringValue
@@ -36,7 +42,7 @@ public struct Coop: Codable, FetchableRecord, PersistableRecord {
             self.bossDefeated = bossDefeated
             let boss = json["bossResult"]["boss"]["id"].stringValue
             self.boss = getImageId(for:boss ,db: db)
-        }else if var boss = json["boss"]["id"].string{
+        }else if let boss = json["boss"]["id"].string{
             self.boss = getImageId(for:boss ,db: db)
         }
         self.suppliedWeapon = PackableNumbers(json["weapons"].arrayValue.map({ j in
@@ -67,6 +73,23 @@ public struct Coop: Codable, FetchableRecord, PersistableRecord {
             return result + wave["deliverCount"].intValue
         }) + json["myResult"]["deliverCount"].intValue
 
+    }
+}
+
+extension Coop: PreComputable {
+    public static func create(from db: Database, identifier: Int64) throws -> Coop? {
+        var row = try Coop.fetchOne(db, key: identifier)
+        try SplatDatabase.shared.dbQueue.read { db in
+            if var row = row {
+                row.suppliedWeapons = Array(0..<4).compactMap { getImageName(by: row.suppliedWeapon[$0], db: db)}
+                if let boss = row.boss{
+                    row.bossName = try ImageMap.fetchOne(db, key: boss)?.name
+                }
+                row.stageImage = try ImageMap.fetchOne(db, key: row.stageId)?.name
+                row.stageName = try ImageMap.fetchOne(db, key: row.stageId)?.nameId
+            }
+        }
+        return row
     }
 }
 
