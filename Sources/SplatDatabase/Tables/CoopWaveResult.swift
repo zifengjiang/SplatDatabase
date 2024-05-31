@@ -53,7 +53,6 @@ extension CoopWaveResult: PreComputable {
             .fetchAll(db)
 
         for index in rows.indices {
-            let event = try I18n.fetchOne(db, key: rows[index].eventWave)
             rows[index].eventName = try String.fetchOne(db, sql:"SELECT key FROM i18n WHERE id = ?", arguments: [rows[index].eventWave])
             rows[index].usedSpecialWeapons = try String.fetchAll(db, sql: """
                 SELECT

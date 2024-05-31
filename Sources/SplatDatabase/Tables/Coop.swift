@@ -108,7 +108,7 @@ public struct Coop: Codable, FetchableRecord, PersistableRecord {
 
 extension Coop: PreComputable {
     public static func create(from db: Database, identifier: Int64) throws -> Coop? {
-        var row = try Coop.fetchOne(db, key: identifier)
+        let row = try Coop.fetchOne(db, key: identifier)
         if var row = row {
             row.suppliedWeapons = Array(0..<4).compactMap { getImageName(by: row.suppliedWeapon[$0], db: db)}
             if let boss = row.boss{
@@ -140,7 +140,7 @@ extension SplatDatabase{
         }
     }
 
-    public func insertCoop(json:JSON, db:Database) throws{
+    public func insertCoop(json:JSON, db:Database) throws {
         let userId = json["id"].stringValue.extractUserId()
         let userCount = try Int.fetchOne(db, sql: "SELECT COUNT(*) FROM account WHERE sp3Id = ?", arguments: [userId])!
         if userCount == 0{

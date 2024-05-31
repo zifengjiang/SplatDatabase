@@ -13,7 +13,7 @@ public struct CoopPlayerResult:Codable, FetchableRecord,PersistableRecord{
     public var rescueCount:Int
     public var rescuedCount:Int
     public var coopId:Int64?
-    
+
     // MARK: - computed properties
     public var player: Player? = nil
     public var specialWeaponName: String? = nil
@@ -21,6 +21,7 @@ public struct CoopPlayerResult:Codable, FetchableRecord,PersistableRecord{
 
     // MARK: - CodingKeys
     enum CodingKeys: String, CodingKey {
+        case id
         case order
         case specialWeaponId
         case defeatEnemyCount
