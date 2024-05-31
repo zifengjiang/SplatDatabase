@@ -14,6 +14,10 @@ public struct CoopPlayerResult:Codable, FetchableRecord,PersistableRecord{
     public var rescuedCount:Int
     public var coopId:Int64?
 
+    public var player: Player? = nil
+    public var specialWeaponName: String? = nil
+    public var weapons:[String]? = nil
+
     public init(json:JSON, order:Int, coopId:Int64,db:Database){
         self.coopId = coopId
         self.order = order
@@ -30,4 +34,33 @@ public struct CoopPlayerResult:Codable, FetchableRecord,PersistableRecord{
         self.rescueCount = json["rescueCount"].intValue
         self.rescuedCount = json["rescuedCount"].intValue
     }
+}
+
+extension CoopPlayerResult: PreComputable {
+    public static func create(from db: Database, identifier: Int64) throws -> [CoopPlayerResult] {
+        var rows = try CoopPlayerResult
+            .filter(Column("coopId") == identifier)
+            .fetchAll(db)
+
+        for index in rows.indices {
+            let player:Player? = try Player.create(from: db, identifier: (rows[index].id!, "coopPlayerResultId"))
+            rows[index].player = player
+            let specialWeapon = try ImageMap.fetchOne(db, key: rows[index].specialWeaponId)
+            rows[index].specialWeaponName = specialWeapon?.name
+            rows[index].weapons = try String.fetchAll(db, sql: """
+                                            SELECT
+                                                imageMap.'name'
+                                            FROM
+                                                weapon
+                                            JOIN coopPlayerResult ON coopPlayerResult.id = weapon.coopPlayerResultId
+                                            JOIN imageMap ON weapon.imageMapId = imageMap.id
+                                            WHERE
+                                                coopPlayerResultId = ?
+                                            ORDER BY
+                                                weapon.'order'
+            """, arguments: [identifier])
+        }
+        return rows
+    }
+
 }

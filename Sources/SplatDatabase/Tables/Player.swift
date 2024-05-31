@@ -18,6 +18,7 @@ public struct Player: Codable, FetchableRecord, PersistableRecord {
 
         // Coop Attributes
     public var uniformId: UInt16?
+    public var uniformName: String? = nil
 
         // Battle Attributes
     public var paint: Int?
@@ -89,7 +90,33 @@ public struct Player: Codable, FetchableRecord, PersistableRecord {
     }
 }
 
+extension Player: PreComputable {
+    public static func create(from db: Database, identifier: (Int64, String)) throws -> [Player] {
+        let (id, column) = identifier
+        var rows = try Player
+            .filter(Column(column) == id)
+            .fetchAll(db)
 
+        for index in rows.indices {
+            let uniform = try ImageMap.fetchOne(db, key: rows[index].uniformId)
+            rows[index].uniformName = uniform?.name
+        }
+        return rows
+    }
+
+    public static func create(from db: Database, identifier: (Int64, String)) throws -> Player? {
+        let (id, column) = identifier
+        var row = try Player
+            .filter(Column(column) == id)
+            .fetchOne(db)
+
+        if var row = row {
+            row.uniformName = try ImageMap.fetchOne(db, key: row.uniformId)?.name
+            return row
+        }
+        return row
+    }
+}
 
 
 
