@@ -68,7 +68,7 @@ jobs:
         }
         return migrator
         EOF
-        sed -I '' -e '/return migrator/{r temp.txt' -e 'd;}' Sources/SplatDatabase/SplatDatabase.swift
+        sed -i '' -e '/return migrator/{r temp.txt' -e 'd;}' Sources/SplatDatabase/SplatDatabase.swift
         rm temp.txt
 
     - name: Commit and push changes
