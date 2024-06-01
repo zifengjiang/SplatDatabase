@@ -1,14 +1,21 @@
-name: Update SplatDatabase
+name: Update data
 
 on:
   schedule:
-    - cron: "*/5 * * * *" # 每天运行一次
-  workflow_dispatch: # 允许手动触发
+    - cron: "*/5 * * * *"
+  push:
+  pull_request:
+  workflow_dispatch:
 
 jobs:
-  update-database:
+  linux:
+    strategy:
+      matrix:
+        swift_version: ["5.10"]
     runs-on: ubuntu-latest
-
+    env:
+      ACTIONS_RUNNER_DEBUG: true
+      ACTIONS_STEP_DEBUG: true
     steps:
       - uses: actions/checkout@v3
       - name: Configure git to trust the workspace despite the different owner
@@ -25,7 +32,7 @@ jobs:
       - name: Get latest version from Leanny and update files
         run: python update.py
 
-      - name: Commit and push changes
+      - name: Commit data
         run: |
           git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
