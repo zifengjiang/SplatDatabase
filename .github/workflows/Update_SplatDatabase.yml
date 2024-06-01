@@ -23,19 +23,11 @@ jobs:
         python -m pip install --upgrade pip
         pip install requests
 
-    - name: Get latest version from remote repository
+    - name: Get latest version from Leanny
       id: get_latest_version
       run: |
-        python -c "
-        import requests
-        from bs4 import BeautifulSoup
-        
-        url = 'https://github.com/Leanny/splat3/tree/main/data/mush/latest'
-        response = requests.get(url)
-        soup = BeautifulSoup(response.content, 'html.parser')
-        latest_version = soup.find('a', {'class': 'js-navigation-open'}).text.strip()
-        print(f'latest_version={latest_version}')
-                  " >> $GITHUB_ENV
+        latest_version=$(curl -s https://raw.githubusercontent.com/Leanny/splat3/main/data/mush/latest)
+        echo "latest_version=$latest_version" >> $GITHUB_ENV
 
     - name: Read local version
       id: read_local_version
