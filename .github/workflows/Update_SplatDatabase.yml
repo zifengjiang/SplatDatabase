@@ -2,81 +2,34 @@ name: Update SplatDatabase
 
 on:
   schedule:
-    - cron: '*/5 * * * *'  # 每天运行一次
-  workflow_dispatch:  # 允许手动触发
+    - cron: "*/5 * * * *" # 每天运行一次
+  workflow_dispatch: # 允许手动触发
 
 jobs:
   update-database:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v3
-    - name: Configure git to trust the workspace despite the different owner
-      run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
+      - uses: actions/checkout@v3
+      - name: Configure git to trust the workspace despite the different owner
+        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
 
-    - name: Configure git to trust the workspace despite the different owner
-      run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: "3.x"
 
-    - name: Get latest version from Leanny
-      id: get_latest_version
-      run: |
-        latest_version=$(curl -s https://raw.githubusercontent.com/Leanny/splat3/main/data/mush/latest)
-        echo "latest_version=$latest_version" >> $GITHUB_ENV
+      - name: Install requests
+        run: pip install requests
 
-    - name: Read local version
-      id: read_local_version
-      run: echo "::set-output name=local_version::$(cat version.txt)"
+      - name: Get latest version from Leanny and update files
+        run: python update.py
 
-    - name: Compare versions
-      id: compare_versions
-      run: |
-        if [ "${{ env.latest_version }}" != "${{ steps.read_local_version.outputs.local_version }}" ]; then
-          echo "::set-output name=update_needed::true"
-        else
-          echo "::set-output name=update_needed::false"
-        fi
-
-    - name: Update files if needed
-      if: steps.compare_versions.outputs.update_needed == 'true'
-      run: |
-        git clone https://github.com/Leanny/splat3.git
-        cp -r splat3/data/mush/${{ env.latest_version }}/BadgeInfo.json Sources/SplatDatabase/Resources/
-        cp -r splat3/data/mush/${{ env.latest_version }}/CoopEnemyInfo.json Sources/SplatDatabase/Resources/
-        cp -r splat3/data/mush/${{ env.latest_version }}/CoopSceneInfo.json Sources/SplatDatabase/Resources/
-        cp -r splat3/data/mush/${{ env.latest_version }}/CoopSkinInfo.json Sources/SplatDatabase/Resources/
-        cp -r splat3/data/mush/${{ env.latest_version }}/GearInfoClothes.json Sources/SplatDatabase/Resources/
-        cp -r splat3/data/mush/${{ env.latest_version }}/GearInfoHead.json Sources/SplatDatabase/Resources/
-        cp -r splat3/data/mush/${{ env.latest_version }}/GearInfoShoes.json Sources/SplatDatabase/Resources/
-        cp -r splat3/data/mush/${{ env.latest_version }}/NamePlateBgInfo.json Sources/SplatDatabase/Resources/
-        cp -r splat3/data/mush/${{ env.latest_version }}/VersusSceneInfo.json Sources/SplatDatabase/Resources/
-        cp -r splat3/data/mush/${{ env.latest_version }}/WeaponInfoMain.json Sources/SplatDatabase/Resources/
-        cp -r splat3/data/mush/${{ env.latest_version }}/GearInfoClothes.json Sources/SplatDatabase/Resources/
-        cp -r splat3/data/mush/${{ env.latest_version }}/WeaponInfoSub.json Sources/SplatDatabase/Resources/
-        # 更新本地版本文件
-        
-
-    - name: Update SplatDatabase.swift
-      if: steps.compare_versions.outputs.update_needed == 'true'
-      run: |
-        cat <<EOF > version.txt
-                migrator.registerMigration("insertI18nForVersion800") { db in
-                    try self.updateI18n(db: db)
-                }
-
-                migrator.registerMigration("insertImageMapForVersion800") { db in
-                    try self.updateImageMap(db: db)
-                }
-                return migrator
-        EOF
-        sed -i '' -e '/return migrator/{r version.txt' -e 'd;}' Sources/SplatDatabase/SplatDatabase.swift
-        echo "${{ env.latest_version }}" > version.txt
-
-    - name: Commit and push changes
-      if: steps.compare_versions.outputs.update_needed == 'true'
-      run: |
-        git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
-        git config --local user.name "github-actions[bot]"
-        git add Sources/SplatDatabase/Resources/*.json
-        git add version.txt
-        git add Sources/SplatDatabase/SplatDatabase.swift
-        if test "$(git diff --name-only --cached 2>/dev/null | wc -l)" -gt "0" ; then git commit -m "Update data." && git push; else echo No changes found; fi 
+      - name: Commit and push changes
+        run: |
+          git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add Sources/SplatDatabase/Resources/*.json
+          git add update.py
+          git add Sources/SplatDatabase/SplatDatabase.swift
+          if test "$(git diff --name-only --cached 2>/dev/null | wc -l)" -gt "0" ; then git commit -m "Update data." && git push; else echo No changes found; fi

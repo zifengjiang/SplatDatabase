@@ -16,13 +16,13 @@ public struct Player: Codable, FetchableRecord, PersistableRecord {
     @Packable public var nameplate: PackableNumbers
     @Packable public var nameplateTextColor: PackableNumbers
 
-    // Coop Attributes
+    // MARK: - Coop Attributes
     public var uniformId: UInt16?
 
     // MARK: - computed properties
     public var uniformName: String? = nil
 
-    // Battle Attributes
+    // MARK: - Battle Attributes
     public var paint: Int?
     public var weaponId: UInt16?
     @Packable public var headGear: PackableNumbers
@@ -33,18 +33,18 @@ public struct Player: Codable, FetchableRecord, PersistableRecord {
     public var festGrade: String?
     public var isMyself: Bool?
 
-    // Battle Result Attributes
+    // MARK: - Battle Result Attributes
     public var kill: Int?
     public var death: Int?
     public var assist: Int?
     public var special: Int?
     public var noroshiTry: Int?
 
-    // References to vsTeam
+    // MARK: - References to vsTeam
     public var vsTeamId: Int64?
     public var coopPlayerResultId: Int64?
 
-    // Database table name
+    // MARK: - Database table name
     public static let databaseTableName = "player"
 
     // MARK: - CodingKeys
@@ -117,7 +117,6 @@ public struct Player: Codable, FetchableRecord, PersistableRecord {
         self.special = json["result"]["special"].int
         self.special = json["result"]["special"].int
 
-            //    self.vsTeamId = 00
         self.isCoop = self.uniformId != nil
     }
 }

@@ -84,16 +84,32 @@ SELECT
     AVG(deliverNorm) AS deliverNorm,
     AVG(goldenPopCount) AS goldenPopCount,
     AVG(teamDeliverCount) AS teamDeliverCount,
-    SUM(CASE WHEN coopWaveResult.waveNumber > coop_view.wave THEN 1 ELSE 0 END) AS failCount,
-    SUM(CASE WHEN coopWaveResult.waveNumber <= coop_view.wave THEN 1 ELSE 0 END) AS successCount
+    SUM(
+        CASE WHEN coopWaveResult.waveNumber > coop_view.wave
+            AND coopWaveResult.waveNumber <> 4 THEN
+            1
+        WHEN coopWaveResult.waveNumber = 4
+            AND coop_view.bossDefeated = 0 THEN
+            1
+        ELSE
+            0
+        END) AS failCount,
+    SUM(
+        CASE WHEN coopWaveResult.waveNumber <= coop_view.wave THEN
+            1
+        WHEN coopWaveResult.waveNumber = 4
+            AND coop_view.bossDefeated = 1 THEN
+            1
+        ELSE
+            0
+        END) AS successCount
 FROM
     coopWaveResult
-JOIN
-    coop_view ON coopWaveResult.coopId = coop_view.id
-LEFT JOIN
-    i18n ON coopWaveResult.eventWave = i18n.id
+    JOIN coop_view ON coopWaveResult.coopId = coop_view.id
+    LEFT JOIN i18n ON coopWaveResult.eventWave = i18n.id
 WHERE
-    coop_view.accountId = ? AND coop_view.GroupID = ?
+    coop_view.accountId = ?
+    AND coop_view.GroupID = ?
 GROUP BY
     eventWaveGroup,
     waterLevel
