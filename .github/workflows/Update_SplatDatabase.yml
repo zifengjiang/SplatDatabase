@@ -9,9 +9,6 @@ on:
 
 jobs:
   linux:
-    strategy:
-      matrix:
-        swift_version: ["5.10"]
     runs-on: ubuntu-latest
     env:
       ACTIONS_RUNNER_DEBUG: true
