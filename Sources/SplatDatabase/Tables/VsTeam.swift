@@ -5,7 +5,7 @@ import SwiftyJSON
 public struct VsTeam:Codable, FetchableRecord, PersistableRecord{
     public var id:Int64?
     public var order:Int
-    @Packable public var color:PackableNumbers
+    public var color:PackableNumbers
     public var judgement:String?
 
         // Team Result Attributes

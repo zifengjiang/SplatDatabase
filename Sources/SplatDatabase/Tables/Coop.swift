@@ -8,7 +8,7 @@ public struct Coop: Codable, FetchableRecord, PersistableRecord {
     public var sp3PrincipalId: String
     public var rule:String
     public var boss:UInt16?
-    @Packable public var suppliedWeapon: PackableNumbers
+    public var suppliedWeapon: PackableNumbers
     public var egg:Int
     public var powerEgg:Int
     public var bossDefeated:Bool?

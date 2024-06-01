@@ -13,8 +13,8 @@ public struct Player: Codable, FetchableRecord, PersistableRecord {
     public var name: String
     public var nameId: String
     public var species: Bool
-    @Packable public var nameplate: PackableNumbers
-    @Packable public var nameplateTextColor: PackableNumbers
+    public var nameplate: PackableNumbers
+    public var nameplateTextColor: PackableNumbers
 
     // MARK: - Coop Attributes
     public var uniformId: UInt16?
@@ -25,9 +25,9 @@ public struct Player: Codable, FetchableRecord, PersistableRecord {
     // MARK: - Battle Attributes
     public var paint: Int?
     public var weaponId: UInt16?
-    @Packable public var headGear: PackableNumbers
-    @Packable public var clothingGear: PackableNumbers
-    @Packable public var shoesGear: PackableNumbers
+    public var headGear: PackableNumbers
+    public var clothingGear: PackableNumbers
+    public var shoesGear: PackableNumbers
     public var crown: Bool?
     public var festDragonCert: String?
     public var festGrade: String?
