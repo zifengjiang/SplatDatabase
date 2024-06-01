@@ -53,12 +53,12 @@ jobs:
         cp -r splat3/data/mush/${{ env.latest_version }}/GearInfoClothes.json Sources/SplatDatabase/Resources/
         cp -r splat3/data/mush/${{ env.latest_version }}/WeaponInfoSub.json Sources/SplatDatabase/Resources/
         # 更新本地版本文件
-        echo "${{ env.latest_version }}" > version.txt
+        
 
     - name: Update SplatDatabase.swift
       if: steps.compare_versions.outputs.update_needed == 'true'
       run: |
-        cat <<EOF > temp.txt
+        cat <<EOF > version.txt
                 migrator.registerMigration("insertI18nForVersion800") { db in
                     try self.updateI18n(db: db)
                 }
@@ -68,8 +68,8 @@ jobs:
                 }
                 return migrator
         EOF
-        sed -i '' -e '/return migrator/{r temp.txt' -e 'd;}' Sources/SplatDatabase/SplatDatabase.swift
-        rm temp.txt
+        sed -i '' -e '/return migrator/{r version.txt' -e 'd;}' Sources/SplatDatabase/SplatDatabase.swift
+        echo "${{ env.latest_version }}" > version.txt
 
     - name: Commit and push changes
       if: steps.compare_versions.outputs.update_needed == 'true'
