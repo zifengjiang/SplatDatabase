@@ -34,11 +34,11 @@ public class SplatDatabase {
             try self.setupSchema(db: db)
         }
 
-        migrator.registerMigration("insertI18nForVersion720") { db in
+        migrator.registerMigration("insertI18nForVersion800") { db in
             try self.updateI18n(db: db)
         }
 
-        migrator.registerMigration("insertImageMapForVersion720") { db in
+        migrator.registerMigration("insertImageMapForVersion800") { db in
             try self.updateImageMap(db: db) // 你可能需要类似修改 updateImageMap 方法
         }
 
@@ -62,20 +62,7 @@ public class SplatDatabase {
                 """)
         }
         
-
-        
-        migrator.registerMigration("insertI18nForVersion800") { db in
-            try self.updateI18n(db: db)
-        }
-
-        migrator.registerMigration("insertImageMapForVersion800") { db in
-            try self.updateImageMap(db: db)
-        }
-        
-
         return migrator
-    
-    
     }
 
 
