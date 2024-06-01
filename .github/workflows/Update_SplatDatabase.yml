@@ -57,10 +57,18 @@ jobs:
     - name: Update SplatDatabase.swift
       if: steps.compare_versions.outputs.update_needed == 'true'
       run: |
-        sed -i '/return migrator/I \
-        migrator.registerMigration("insertI18nForVersion${{ env.latest_version }}") { db in\n\
-            try self.updateI18n(db: db)\n\
-        }' Sources/SplatDatabase/SplatDatabase.swift
+        cat <<EOF > temp.txt
+        migrator.registerMigration("insertI18nForVersion${{ env.latest_version }}") { db in  
+            try self.updateI18n(db: db)  
+        }
+
+        migrator.registerMigration("insertImageMapForVersion${{ env.latest_version }}") { db in
+            try self.updateImageMap(db: db) 
+        }
+        return migrator
+        EOF
+        sed -i '' -e '/return migrator/{r temp.txt' -e 'd;}' Sources/SplatDatabase/SplatDatabase.swift
+        rm temp.txt
 
     - name: Commit and push changes
       if: steps.compare_versions.outputs.update_needed == 'true'
