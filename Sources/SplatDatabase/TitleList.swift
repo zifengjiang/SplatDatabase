@@ -1,13 +1,6 @@
-    //
-    //  File.swift
-    //
-    //
-    //  Created by 姜锋 on 5/14/24.
-    //
-
 import Foundation
-import SwiftyJSON
 import GRDB
+import SwiftyJSON
 
 class TitleList {
     static let shared = TitleList()
@@ -21,18 +14,19 @@ class TitleList {
     }
 }
 
-public func formatByname(_ byname: String,language: String,db: Database) -> String {
+
+public func _formatByname(_ byname: String) -> (adjective: String, subject:String)? {
     let titleList = TitleList.shared.titleList
     var tags: [(adjective: String, id: String, index: Int)] = []
-    var node = titleList["adjectives"]
+    var adjectives = titleList["adjectives"]
     var current = ""
 
     for char in byname {
         let charString = String(char)
-        if node[charString].exists() {
-            node = node[charString]
+        if adjectives[charString].exists() {
+            adjectives = adjectives[charString]
             current += charString
-            for tag in node["tags"].arrayValue {
+            for tag in adjectives["tags"].arrayValue {
                 tags.append((adjective: current, id: tag["id"].stringValue, index: tag["index"].intValue))
             }
         } else {
@@ -41,14 +35,20 @@ public func formatByname(_ byname: String,language: String,db: Database) -> Stri
     }
 
     for tag in tags {
-        let subject = String(byname.dropFirst(tag.adjective.count)).trimmingCharacters(in: .whitespaces)
-        if let subjectId = titleList["subjects"][tag.index][subject].string {
-            let subjectRow = try? Row.fetchOne(db, sql: "SELECT \(language) FROM i18n WHERE key = ?", arguments: [subjectId])
-            let adjectiveRow = try? Row.fetchOne(db, sql: "SELECT \(language) FROM i18n WHERE key = ?", arguments: [tag.id])
-
-            return "\(adjectiveRow?[language] ?? "") \(subjectRow?[language] ?? "")"
+        let subject = byname.dropFirst(tag.adjective.count).trimmingCharacters(in: .whitespaces)
+        if let subjectString = titleList["subjects"][tag.index][subject].string {
+            return (adjective: tag.id, subject:subjectString)
         }
     }
 
-    return byname
+    return nil
 }
+
+public func formatByname(_ byname: String, db:Database) -> PackableNumbers{
+    let formatted = _formatByname(byname)
+    if let adjectiveId = getI18nId(by: formatted?.adjective, db: db), let subjectId = getI18nId(by: formatted?.subject, db: db){
+        return PackableNumbers([adjectiveId, subjectId])
+    }
+    return PackableNumbers([0, 0])
+}
+

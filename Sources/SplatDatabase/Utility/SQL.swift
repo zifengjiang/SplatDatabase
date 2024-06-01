@@ -34,7 +34,7 @@ let enemy_status_sql = """
       SELECT enemyId, totalTeamDefeatCount, totalDefeatCount, totalPopCount
       FROM BossResults
   )
-  SELECT e.name, cr.totalTeamDefeatCount, cr.totalDefeatCount, cr.totalPopCount
+  SELECT e.name, e.nameId, cr.totalTeamDefeatCount, cr.totalDefeatCount, cr.totalPopCount
   FROM CombinedResults cr
   JOIN imageMap e ON cr.enemyId = e.id
 """
@@ -79,26 +79,24 @@ let group_status_sql = """
 """
 
 let wave_result_sql = """
-  SELECT
-      CASE
-          WHEN eventWave IS NULL THEN '-'
-          ELSE eventWave
-      END AS eventWaveGroup,
+    SELECT
+      KEY AS eventWaveGroup,
       waterLevel,
       AVG(deliverNorm) AS deliverNorm,
       AVG(goldenPopCount) AS goldenPopCount,
       AVG(teamDeliverCount) AS teamDeliverCount,
       COUNT(*) as count
-  FROM
+    FROM
       coopWaveResult
-  JOIN
+    JOIN
       coop_view ON coopWaveResult.coopId = coop_view.id
-  WHERE
+    LEFT JOIN i18n ON coopWaveResult.eventWave = i18n.id
+    WHERE
       coop_view.accountId = ? AND coop_view.GroupID = ?
-  GROUP BY
+    GROUP BY
       eventWaveGroup,
       waterLevel
-  ORDER BY
+    ORDER BY
       eventWaveGroup,
       waterLevel;
 """
