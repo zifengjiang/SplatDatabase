@@ -59,14 +59,14 @@ jobs:
       if: steps.compare_versions.outputs.update_needed == 'true'
       run: |
         cat <<EOF > temp.txt
-        migrator.registerMigration("insertI18nForVersion${{ env.latest_version }}") { db in  
-            try self.updateI18n(db: db)  
-        }
+                migrator.registerMigration("insertI18nForVersion800") { db in
+                    try self.updateI18n(db: db)
+                }
 
-        migrator.registerMigration("insertImageMapForVersion${{ env.latest_version }}") { db in
-            try self.updateImageMap(db: db) 
-        }
-        return migrator
+                migrator.registerMigration("insertImageMapForVersion800") { db in
+                    try self.updateImageMap(db: db)
+                }
+                return migrator
         EOF
         sed -i '' -e '/return migrator/{r temp.txt' -e 'd;}' Sources/SplatDatabase/SplatDatabase.swift
         rm temp.txt
