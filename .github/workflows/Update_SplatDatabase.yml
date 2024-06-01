@@ -13,7 +13,6 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v2
 
-    - uses: actions/checkout@v3
     - name: Configure git to trust the workspace despite the different owner
       run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
 
@@ -58,7 +57,7 @@ jobs:
     - name: Update SplatDatabase.swift
       if: steps.compare_versions.outputs.update_needed == 'true'
       run: |
-        sed -i '/return migrator/i \
+        sed -i '/return migrator/I \
         migrator.registerMigration("insertI18nForVersion${{ env.latest_version }}") { db in\n\
             try self.updateI18n(db: db)\n\
         }' Sources/SplatDatabase/SplatDatabase.swift
@@ -66,7 +65,11 @@ jobs:
     - name: Commit and push changes
       if: steps.compare_versions.outputs.update_needed == 'true'
       run: |
-          git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git config --local user.name "github-actions[bot]"
-          git add Sources/SplatDatabase/Resources/*.json version.txt Sources/SplatDatabase/SplatDatabase.swift
-          if test "$(git diff --name-only --cached 2>/dev/null | wc -l)" -gt "0" ; then git commit -m "Update data." && git push; else echo No changes found; fi
+        git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
+        git config --local user.name "github-actions[bot]"
+        git add Sources/SplatDatabase/Resources/*.json version.txt Sources/SplatDatabase/SplatDatabase.swift
+        if test "$(git diff --name-only --cached 2>/dev/null | wc -l)" -gt "0"; then
+          git commit -m "Update data." && git push
+        else
+          echo No changes found
+        fi
