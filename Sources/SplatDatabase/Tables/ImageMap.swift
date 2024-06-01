@@ -45,7 +45,7 @@ extension SplatDatabase {
     public func updateImageMap(db: Database) throws {
             // unknown
         for un in getUnknownMap() {
-            try un.insert(db)
+            try un.insert(db, onConflict: .ignore)
         }
 
             // Update badges
@@ -54,7 +54,7 @@ extension SplatDatabase {
             using: getBadgeMap,
             insertFunction: { badge, db in
                 if try ImageMap.filter(Column("nameId") == badge.nameId).fetchOne(db) == nil {
-                    try badge.insert(db)
+                    try badge.insert(db, onConflict: .ignore)
                 }
             },
             db: db
@@ -66,7 +66,7 @@ extension SplatDatabase {
             using: getWeaponMainMap,
             insertFunction: { weapon, db in
                 if try ImageMap.filter(Column("nameId") == weapon.nameId).fetchOne(db) == nil {
-                    try weapon.insert(db)
+                    try weapon.insert(db, onConflict: .ignore)
                 }
             },
             db: db
@@ -78,7 +78,7 @@ extension SplatDatabase {
             using: { json in getWeaponSubspe(from: json, prefix: "Special") },
             insertFunction: { special, db in
                 if try ImageMap.filter(Column("nameId") == special.nameId).fetchOne(db) == nil {
-                    try special.insert(db)
+                    try special.insert(db, onConflict: .ignore)
                 }
             },
             db: db
@@ -90,7 +90,7 @@ extension SplatDatabase {
             using: { json in getWeaponSubspe(from: json, prefix: "Sub") },
             insertFunction: { sub, db in
                 if try ImageMap.filter(Column("nameId") == sub.nameId).fetchOne(db) == nil {
-                    try sub.insert(db)
+                    try sub.insert(db, onConflict: .ignore)
                 }
             },
             db: db
@@ -102,7 +102,7 @@ extension SplatDatabase {
             using: getNameplateMap,
             insertFunction: { nameplate, db in
                 if try ImageMap.filter(Column("nameId") == nameplate.nameId).fetchOne(db) == nil {
-                    try nameplate.insert(db)
+                    try nameplate.insert(db, onConflict: .ignore)
                 }
             },
             db: db
@@ -116,7 +116,7 @@ extension SplatDatabase {
                 using: getGearMap,
                 insertFunction: { gear, db in
                     if try ImageMap.filter(Column("nameId") == gear.nameId).fetchOne(db) == nil {
-                        try gear.insert(db)
+                        try gear.insert(db, onConflict: .ignore)
                     }
                 },
                 db: db
@@ -129,7 +129,7 @@ extension SplatDatabase {
             using: getCoopEnemyMap,
             insertFunction: { enemy, db in
                 if try ImageMap.filter(Column("nameId") == enemy.nameId).fetchOne(db) == nil {
-                    try enemy.insert(db)
+                    try enemy.insert(db, onConflict: .ignore)
                 }
             },
             db: db
@@ -141,7 +141,7 @@ extension SplatDatabase {
             using: getCoopSkinMap,
             insertFunction: { skin, db in
                 if try ImageMap.filter(Column("nameId") == skin.nameId).fetchOne(db) == nil {
-                    try skin.insert(db)
+                    try skin.insert(db, onConflict: .ignore)
                 }
             },
             db: db
@@ -155,7 +155,7 @@ extension SplatDatabase {
                 using: { json in getStageMap(from: json, prefix: mode) },
                 insertFunction: { stage, db in
                     if try ImageMap.filter(Column("nameId") == stage.nameId).fetchOne(db) == nil {
-                        try stage.insert(db)
+                        try stage.insert(db, onConflict: .ignore)
                     }
                 },
                 db: db

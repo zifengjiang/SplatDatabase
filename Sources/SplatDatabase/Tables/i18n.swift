@@ -74,7 +74,7 @@ extension SplatDatabase {
             let exists = try I18n.filter(Column("key") == String(k)).fetchOne(db) != nil
             if exists { continue }
             let record = I18n(key: String(k), translations: translations)
-            try record.insert(db)
+            try record.insert(db, onConflict: .ignore)
         }
     }
 
