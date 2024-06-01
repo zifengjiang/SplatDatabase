@@ -236,5 +236,47 @@
     },
     "UrokoUnlockLevel": 3,
     "__RowId": "COP017"
+  },
+  {
+    "GearClothesName": "Clt_COP018",
+    "GearHeadName": "Hed_COP018",
+    "Id": 18,
+    "Order": 18.0,
+    "Season": 8,
+    "UrokoPrice": {
+      "BronzeUrokoNum": 0,
+      "GoldUrokoNum": 0,
+      "SilverUrokoNum": 150
+    },
+    "UrokoUnlockLevel": 3,
+    "__RowId": "COP018"
+  },
+  {
+    "GearClothesName": "Clt_COP019",
+    "GearHeadName": "Hed_COP019",
+    "Id": 19,
+    "Order": 19.0,
+    "Season": 8,
+    "UrokoPrice": {
+      "BronzeUrokoNum": 0,
+      "GoldUrokoNum": 0,
+      "SilverUrokoNum": 150
+    },
+    "UrokoUnlockLevel": 3,
+    "__RowId": "COP019"
+  },
+  {
+    "GearClothesName": "Clt_COP020",
+    "GearHeadName": "Hed_COP020",
+    "Id": 20,
+    "Order": 20.0,
+    "Season": 8,
+    "UrokoPrice": {
+      "BronzeUrokoNum": 0,
+      "GoldUrokoNum": 0,
+      "SilverUrokoNum": 150
+    },
+    "UrokoUnlockLevel": 3,
+    "__RowId": "COP020"
   }
 ]

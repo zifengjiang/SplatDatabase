@@ -605,6 +605,17 @@
     "__RowId": "Work/Gyml/BadgeInfo_CoopGrade_Normal_Shakeup_Lv03.spl__BadgeInfo.gyml"
   },
   {
+    "Category": "CoopKillTripleBoss",
+    "Id": 5211000,
+    "MsgLabelEx": "",
+    "Name": "CoopKillTripleBoss_Lv00",
+    "Order": 5211000,
+    "Sub1_Int": 0,
+    "Sub1_Str": "",
+    "Sub2_Int": 0,
+    "__RowId": "Work/Gyml/BadgeInfo_CoopKillTripleBoss_Lv00.spl__BadgeInfo.gyml"
+  },
+  {
     "Category": "CoopRareEnemyKillNum",
     "Id": 5200100,
     "MsgLabelEx": "CoopRareEnemyKillNum_Lv00",
@@ -2663,6 +2674,28 @@
   },
   {
     "Category": "WeaponLevel",
+    "Id": 1002210,
+    "MsgLabelEx": "WeaponLevel_Lv00",
+    "Name": "WeaponLevel_Blaster_Long_01_Lv00",
+    "Order": 1002210,
+    "Sub1_Int": 221,
+    "Sub1_Str": "",
+    "Sub2_Int": 4,
+    "__RowId": "Work/Gyml/BadgeInfo_WeaponLevel_Blaster_Long_01_Lv00.spl__BadgeInfo.gyml"
+  },
+  {
+    "Category": "WeaponLevel",
+    "Id": 1002211,
+    "MsgLabelEx": "WeaponLevel_Lv01",
+    "Name": "WeaponLevel_Blaster_Long_01_Lv01",
+    "Order": 1002211,
+    "Sub1_Int": 221,
+    "Sub1_Str": "",
+    "Sub2_Int": 5,
+    "__RowId": "Work/Gyml/BadgeInfo_WeaponLevel_Blaster_Long_01_Lv01.spl__BadgeInfo.gyml"
+  },
+  {
+    "Category": "WeaponLevel",
     "Id": 1002100,
     "MsgLabelEx": "WeaponLevel_Lv00",
     "Name": "WeaponLevel_Blaster_Middle_00_Lv00",
@@ -3034,6 +3067,28 @@
     "Sub1_Str": "",
     "Sub2_Int": 5,
     "__RowId": "Work/Gyml/BadgeInfo_WeaponLevel_Charger_Light_00_Lv01.spl__BadgeInfo.gyml"
+  },
+  {
+    "Category": "WeaponLevel",
+    "Id": 1020510,
+    "MsgLabelEx": "WeaponLevel_Lv00",
+    "Name": "WeaponLevel_Charger_Light_01_Lv00",
+    "Order": 1020510,
+    "Sub1_Int": 2051,
+    "Sub1_Str": "",
+    "Sub2_Int": 4,
+    "__RowId": "Work/Gyml/BadgeInfo_WeaponLevel_Charger_Light_01_Lv00.spl__BadgeInfo.gyml"
+  },
+  {
+    "Category": "WeaponLevel",
+    "Id": 1020511,
+    "MsgLabelEx": "WeaponLevel_Lv01",
+    "Name": "WeaponLevel_Charger_Light_01_Lv01",
+    "Order": 1020511,
+    "Sub1_Int": 2051,
+    "Sub1_Str": "",
+    "Sub2_Int": 5,
+    "__RowId": "Work/Gyml/BadgeInfo_WeaponLevel_Charger_Light_01_Lv01.spl__BadgeInfo.gyml"
   },
   {
     "Category": "WeaponLevel",
@@ -3433,6 +3488,28 @@
   },
   {
     "Category": "WeaponLevel",
+    "Id": 1050510,
+    "MsgLabelEx": "WeaponLevel_Lv00",
+    "Name": "WeaponLevel_Maneuver_Long_01_Lv00",
+    "Order": 1050510,
+    "Sub1_Int": 5051,
+    "Sub1_Str": "",
+    "Sub2_Int": 4,
+    "__RowId": "Work/Gyml/BadgeInfo_WeaponLevel_Maneuver_Long_01_Lv00.spl__BadgeInfo.gyml"
+  },
+  {
+    "Category": "WeaponLevel",
+    "Id": 1050511,
+    "MsgLabelEx": "WeaponLevel_Lv01",
+    "Name": "WeaponLevel_Maneuver_Long_01_Lv01",
+    "Order": 1050511,
+    "Sub1_Int": 5051,
+    "Sub1_Str": "",
+    "Sub2_Int": 5,
+    "__RowId": "Work/Gyml/BadgeInfo_WeaponLevel_Maneuver_Long_01_Lv01.spl__BadgeInfo.gyml"
+  },
+  {
+    "Category": "WeaponLevel",
     "Id": 1050100,
     "MsgLabelEx": "WeaponLevel_Lv00",
     "Name": "WeaponLevel_Maneuver_Normal_00_Lv00",
@@ -3829,6 +3906,50 @@
   },
   {
     "Category": "WeaponLevel",
+    "Id": 1080200,
+    "MsgLabelEx": "WeaponLevel_Lv00",
+    "Name": "WeaponLevel_Saber_Heavy_00_Lv00",
+    "Order": 1080200,
+    "Sub1_Int": 8020,
+    "Sub1_Str": "",
+    "Sub2_Int": 4,
+    "__RowId": "Work/Gyml/BadgeInfo_WeaponLevel_Saber_Heavy_00_Lv00.spl__BadgeInfo.gyml"
+  },
+  {
+    "Category": "WeaponLevel",
+    "Id": 1080201,
+    "MsgLabelEx": "WeaponLevel_Lv01",
+    "Name": "WeaponLevel_Saber_Heavy_00_Lv01",
+    "Order": 1080201,
+    "Sub1_Int": 8020,
+    "Sub1_Str": "",
+    "Sub2_Int": 5,
+    "__RowId": "Work/Gyml/BadgeInfo_WeaponLevel_Saber_Heavy_00_Lv01.spl__BadgeInfo.gyml"
+  },
+  {
+    "Category": "WeaponLevel",
+    "Id": 1080210,
+    "MsgLabelEx": "WeaponLevel_Lv00",
+    "Name": "WeaponLevel_Saber_Heavy_01_Lv00",
+    "Order": 1080210,
+    "Sub1_Int": 8021,
+    "Sub1_Str": "",
+    "Sub2_Int": 4,
+    "__RowId": "Work/Gyml/BadgeInfo_WeaponLevel_Saber_Heavy_01_Lv00.spl__BadgeInfo.gyml"
+  },
+  {
+    "Category": "WeaponLevel",
+    "Id": 1080211,
+    "MsgLabelEx": "WeaponLevel_Lv01",
+    "Name": "WeaponLevel_Saber_Heavy_01_Lv01",
+    "Order": 1080211,
+    "Sub1_Int": 8021,
+    "Sub1_Str": "",
+    "Sub2_Int": 5,
+    "__RowId": "Work/Gyml/BadgeInfo_WeaponLevel_Saber_Heavy_01_Lv01.spl__BadgeInfo.gyml"
+  },
+  {
+    "Category": "WeaponLevel",
     "Id": 1080100,
     "MsgLabelEx": "WeaponLevel_Lv00",
     "Name": "WeaponLevel_Saber_Lite_00_Lv00",
@@ -4002,6 +4123,28 @@
     "Sub1_Str": "",
     "Sub2_Int": 5,
     "__RowId": "Work/Gyml/BadgeInfo_WeaponLevel_Shelter_Focus_00_Lv01.spl__BadgeInfo.gyml"
+  },
+  {
+    "Category": "WeaponLevel",
+    "Id": 1060310,
+    "MsgLabelEx": "WeaponLevel_Lv00",
+    "Name": "WeaponLevel_Shelter_Focus_01_Lv00",
+    "Order": 1060310,
+    "Sub1_Int": 6031,
+    "Sub1_Str": "",
+    "Sub2_Int": 4,
+    "__RowId": "Work/Gyml/BadgeInfo_WeaponLevel_Shelter_Focus_01_Lv00.spl__BadgeInfo.gyml"
+  },
+  {
+    "Category": "WeaponLevel",
+    "Id": 1060311,
+    "MsgLabelEx": "WeaponLevel_Lv01",
+    "Name": "WeaponLevel_Shelter_Focus_01_Lv01",
+    "Order": 1060311,
+    "Sub1_Int": 6031,
+    "Sub1_Str": "",
+    "Sub2_Int": 5,
+    "__RowId": "Work/Gyml/BadgeInfo_WeaponLevel_Shelter_Focus_01_Lv01.spl__BadgeInfo.gyml"
   },
   {
     "Category": "WeaponLevel",
@@ -5149,6 +5292,28 @@
   },
   {
     "Category": "WeaponLevel",
+    "Id": 1040510,
+    "MsgLabelEx": "WeaponLevel_Lv00",
+    "Name": "WeaponLevel_Spinner_HyperShort_01_Lv00",
+    "Order": 1040510,
+    "Sub1_Int": 4051,
+    "Sub1_Str": "",
+    "Sub2_Int": 4,
+    "__RowId": "Work/Gyml/BadgeInfo_WeaponLevel_Spinner_HyperShort_01_Lv00.spl__BadgeInfo.gyml"
+  },
+  {
+    "Category": "WeaponLevel",
+    "Id": 1040511,
+    "MsgLabelEx": "WeaponLevel_Lv01",
+    "Name": "WeaponLevel_Spinner_HyperShort_01_Lv01",
+    "Order": 1040511,
+    "Sub1_Int": 4051,
+    "Sub1_Str": "",
+    "Sub2_Int": 5,
+    "__RowId": "Work/Gyml/BadgeInfo_WeaponLevel_Spinner_HyperShort_01_Lv01.spl__BadgeInfo.gyml"
+  },
+  {
+    "Category": "WeaponLevel",
     "Id": 1040200,
     "MsgLabelEx": "WeaponLevel_Lv00",
     "Name": "WeaponLevel_Spinner_Hyper_00_Lv00",
@@ -5168,6 +5333,28 @@
     "Sub1_Str": "",
     "Sub2_Int": 5,
     "__RowId": "Work/Gyml/BadgeInfo_WeaponLevel_Spinner_Hyper_00_Lv01.spl__BadgeInfo.gyml"
+  },
+  {
+    "Category": "WeaponLevel",
+    "Id": 1040210,
+    "MsgLabelEx": "WeaponLevel_Lv00",
+    "Name": "WeaponLevel_Spinner_Hyper_01_Lv00",
+    "Order": 1040210,
+    "Sub1_Int": 4021,
+    "Sub1_Str": "",
+    "Sub2_Int": 4,
+    "__RowId": "Work/Gyml/BadgeInfo_WeaponLevel_Spinner_Hyper_01_Lv00.spl__BadgeInfo.gyml"
+  },
+  {
+    "Category": "WeaponLevel",
+    "Id": 1040211,
+    "MsgLabelEx": "WeaponLevel_Lv01",
+    "Name": "WeaponLevel_Spinner_Hyper_01_Lv01",
+    "Order": 1040211,
+    "Sub1_Int": 4021,
+    "Sub1_Str": "",
+    "Sub2_Int": 5,
+    "__RowId": "Work/Gyml/BadgeInfo_WeaponLevel_Spinner_Hyper_01_Lv01.spl__BadgeInfo.gyml"
   },
   {
     "Category": "WeaponLevel",
@@ -5322,6 +5509,50 @@
     "Sub1_Str": "",
     "Sub2_Int": 5,
     "__RowId": "Work/Gyml/BadgeInfo_WeaponLevel_Spinner_Standard_O_Lv01.spl__BadgeInfo.gyml"
+  },
+  {
+    "Category": "WeaponLevel",
+    "Id": 1070300,
+    "MsgLabelEx": "WeaponLevel_Lv00",
+    "Name": "WeaponLevel_Stringer_Explosion_00_Lv00",
+    "Order": 1070300,
+    "Sub1_Int": 7030,
+    "Sub1_Str": "",
+    "Sub2_Int": 4,
+    "__RowId": "Work/Gyml/BadgeInfo_WeaponLevel_Stringer_Explosion_00_Lv00.spl__BadgeInfo.gyml"
+  },
+  {
+    "Category": "WeaponLevel",
+    "Id": 1070301,
+    "MsgLabelEx": "WeaponLevel_Lv01",
+    "Name": "WeaponLevel_Stringer_Explosion_00_Lv01",
+    "Order": 1070301,
+    "Sub1_Int": 7030,
+    "Sub1_Str": "",
+    "Sub2_Int": 5,
+    "__RowId": "Work/Gyml/BadgeInfo_WeaponLevel_Stringer_Explosion_00_Lv01.spl__BadgeInfo.gyml"
+  },
+  {
+    "Category": "WeaponLevel",
+    "Id": 1070310,
+    "MsgLabelEx": "WeaponLevel_Lv00",
+    "Name": "WeaponLevel_Stringer_Explosion_01_Lv00",
+    "Order": 1070310,
+    "Sub1_Int": 7031,
+    "Sub1_Str": "",
+    "Sub2_Int": 4,
+    "__RowId": "Work/Gyml/BadgeInfo_WeaponLevel_Stringer_Explosion_01_Lv00.spl__BadgeInfo.gyml"
+  },
+  {
+    "Category": "WeaponLevel",
+    "Id": 1070311,
+    "MsgLabelEx": "WeaponLevel_Lv01",
+    "Name": "WeaponLevel_Stringer_Explosion_01_Lv01",
+    "Order": 1070311,
+    "Sub1_Int": 7031,
+    "Sub1_Str": "",
+    "Sub2_Int": 5,
+    "__RowId": "Work/Gyml/BadgeInfo_WeaponLevel_Stringer_Explosion_01_Lv01.spl__BadgeInfo.gyml"
   },
   {
     "Category": "WeaponLevel",

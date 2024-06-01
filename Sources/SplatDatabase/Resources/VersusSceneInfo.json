@@ -1,5 +1,11 @@
 [
   {
+    "DisplayOrder": 24,
+    "Id": 24,
+    "Season": 8,
+    "__RowId": "Vss_AutoWalk00"
+  },
+  {
     "DisplayOrder": 13,
     "Id": 7,
     "Season": 2,
@@ -45,7 +51,7 @@
     "DisplayOrder": 6,
     "Id": 10,
     "Season": 0,
-    "__RowId": "Vss_Kaisou03"
+    "__RowId": "Vss_Kaisou04"
   },
   {
     "DisplayOrder": 11,
@@ -93,7 +99,7 @@
     "DisplayOrder": 17,
     "Id": 8,
     "Season": 4,
-    "__RowId": "Vss_Section00"
+    "__RowId": "Vss_Section01"
   },
   {
     "DisplayOrder": 19,
