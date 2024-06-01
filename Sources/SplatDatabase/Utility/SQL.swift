@@ -78,26 +78,28 @@ let group_status_sql = """
 """
 
 let wave_result_sql = """
-    SELECT
-      KEY AS eventWaveGroup,
-      waterLevel,
-      AVG(deliverNorm) AS deliverNorm,
-      AVG(goldenPopCount) AS goldenPopCount,
-      AVG(teamDeliverCount) AS teamDeliverCount,
-      COUNT(*) as count
-    FROM
-      coopWaveResult
-    JOIN
-      coop_view ON coopWaveResult.coopId = coop_view.id
-    LEFT JOIN i18n ON coopWaveResult.eventWave = i18n.id
-    WHERE
-      coop_view.accountId = ? AND coop_view.GroupID = ?
-    GROUP BY
-      eventWaveGroup,
-      waterLevel
-    ORDER BY
-      eventWaveGroup,
-      waterLevel;
+SELECT
+    KEY AS eventWaveGroup,
+    waterLevel,
+    AVG(deliverNorm) AS deliverNorm,
+    AVG(goldenPopCount) AS goldenPopCount,
+    AVG(teamDeliverCount) AS teamDeliverCount,
+    SUM(CASE WHEN coopWaveResult.waveNumber > coop_view.wave THEN 1 ELSE 0 END) AS failCount,
+    SUM(CASE WHEN coopWaveResult.waveNumber <= coop_view.wave THEN 1 ELSE 0 END) AS successCount
+FROM
+    coopWaveResult
+JOIN
+    coop_view ON coopWaveResult.coopId = coop_view.id
+LEFT JOIN
+    i18n ON coopWaveResult.eventWave = i18n.id
+WHERE
+    coop_view.accountId = ? AND coop_view.GroupID = ?
+GROUP BY
+    eventWaveGroup,
+    waterLevel
+ORDER BY
+    eventWaveGroup,
+    waterLevel;
 """
 
 let last_500_coop_sql = """
