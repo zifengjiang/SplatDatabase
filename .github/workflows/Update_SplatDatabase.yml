@@ -67,9 +67,7 @@ jobs:
       run: |
         git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
         git config --local user.name "github-actions[bot]"
-        git add Sources/SplatDatabase/Resources/*.json version.txt Sources/SplatDatabase/SplatDatabase.swift
-        if test "$(git diff --name-only --cached 2>/dev/null | wc -l)" -gt "0"; then
-          git commit -m "Update data." && git push
-        else
-          echo No changes found
-        fi
+        git add Sources/SplatDatabase/Resources/*.json
+        git add version.txt
+        git add Sources/SplatDatabase/SplatDatabase.swift
+        if test "$(git diff --name-only --cached 2>/dev/null | wc -l)" -gt "0" ; then git commit -m "Update data." && git push; else echo No changes found; fi
