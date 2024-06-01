@@ -1,7 +1,8 @@
 import requests
+import json
 import re
 
-current_version = 800
+current_version = 720
 
 BASE_URL = "https://raw.githubusercontent.com/Leanny/splat3/main/data/mush/"
 
@@ -64,15 +65,94 @@ def update_script_version(new_version):
         file.write(updated_content)
 
 
+def write_out(path, obj):
+    with open(path, 'w', encoding='utf-8') as file:
+        json.dump(obj, file, ensure_ascii=False, indent=2)
+        file.write("\n")
+
+
+def build_trie(array):
+    trie = {}
+    for obj in array:
+        node = trie
+        for char in obj["key"]:
+            if char not in node:
+                node[char] = {}
+            node = node[char]
+        if "tags" not in node:
+            node["tags"] = []
+        node["tags"].append(obj["value"])
+    return trie
+
+
+def get_title_map():
+    urls = [
+        "https://raw.githubusercontent.com/Leanny/splat3/main/data/language/CNzh_unicode.json",
+        "https://raw.githubusercontent.com/Leanny/splat3/main/data/language/EUde_unicode.json",
+        "https://raw.githubusercontent.com/Leanny/splat3/main/data/language/EUen_unicode.json",
+        "https://raw.githubusercontent.com/Leanny/splat3/main/data/language/EUes_unicode.json",
+        "https://raw.githubusercontent.com/Leanny/splat3/main/data/language/EUfr_unicode.json",
+        "https://raw.githubusercontent.com/Leanny/splat3/main/data/language/EUit_unicode.json",
+        "https://raw.githubusercontent.com/Leanny/splat3/main/data/language/EUnl_unicode.json",
+        "https://raw.githubusercontent.com/Leanny/splat3/main/data/language/EUru_unicode.json",
+        "https://raw.githubusercontent.com/Leanny/splat3/main/data/language/JPja_unicode.json",
+        "https://raw.githubusercontent.com/Leanny/splat3/main/data/language/KRko_unicode.json",
+        "https://raw.githubusercontent.com/Leanny/splat3/main/data/language/TWzh_unicode.json",
+        "https://raw.githubusercontent.com/Leanny/splat3/main/data/language/USen_unicode.json",
+        "https://raw.githubusercontent.com/Leanny/splat3/main/data/language/USes_unicode.json",
+        "https://raw.githubusercontent.com/Leanny/splat3/main/data/language/USfr_unicode.json"
+    ]
+
+    responses = [requests.get(url) for url in urls]
+    jsons = [res.json() for res in responses]
+
+    adjectives = []
+    subjects = []
+
+    for i, json_data in enumerate(jsons):
+        for key, value in json_data["CommonMsg/Byname/BynameAdjective"].items():
+            id = f"TitleAdjective-{key}"
+            adjectives.append({
+                "key": re.sub(r"\[.+?\]|-", "", value),
+                "value": {
+                    "id": id,
+                    "index": i,
+                }
+            })
+
+        subject = {}
+        for key, value in json_data["CommonMsg/Byname/BynameSubject"].items():
+            if key.endswith("_0"):
+                neutral_key = key.replace("_0", "")
+                alt_key = f"{neutral_key}_1"
+                if "group=0001" in json_data["CommonMsg/Byname/BynameSubject"].get(alt_key, ""):
+                    id = f"TitleSubject-{neutral_key}"
+                    subject[re.sub(r"\[.+?\]|-", "", value)] = id
+                else:
+                    id = f"TitleSubject-{key}"
+                    subject[re.sub(r"\[.+?\]|-", "", value)] = id
+                    alt_id = f"TitleSubject-{alt_key}"
+                    subject[re.sub(r"\[.+?\]|-", "", json_data["CommonMsg/Byname/BynameSubject"]
+                            [alt_key])] = alt_id
+
+        subjects.append(subject)
+
+    return {"adjectives": build_trie(adjectives), "subjects": subjects}
+
+
 def main():
     global current_version
-
     # 获取最新版本号
     latest_version = requests.get(BASE_URL + "latest").text.strip()
     print(f"Latest version: {latest_version}")
 
     if latest_version != str(current_version):
         print("Updating files...")
+
+        # 更新 titles.json
+        title_map = get_title_map()
+        write_out("Sources/SplatDatabase/Resources/titles.json", title_map)
+
         for filename in files_to_download:
             download_file(latest_version, filename)
 
