@@ -15,7 +15,7 @@ class TitleList {
 }
 
 
-public func _formatByname(_ byname: String) -> (adjective: String, subject:String)? {
+public func formatByname(_ byname: String) -> (adjective: String, subject:String, male:Bool?)? {
     let titleList = TitleList.shared.titleList
     var tags: [(adjective: String, id: String, index: Int)] = []
     var adjectives = titleList["adjectives"]
@@ -37,18 +37,15 @@ public func _formatByname(_ byname: String) -> (adjective: String, subject:Strin
     for tag in tags {
         let subject = byname.dropFirst(tag.adjective.count).trimmingCharacters(in: .whitespaces)
         if let subjectString = titleList["subjects"][tag.index][subject].string {
-            return (adjective: tag.id, subject:subjectString)
+            let  splitSubjectString = subjectString.split(separator: "_")
+            if splitSubjectString.count == 2{
+                return (adjective: tag.id, subject: String(splitSubjectString[0]),male: splitSubjectString[1] == "0")
+            }
+            return (adjective: tag.id, subject:subjectString, male: nil)
         }
     }
 
     return nil
 }
 
-public func formatByname(_ byname: String, db:Database) -> PackableNumbers{
-    let formatted = _formatByname(byname)
-    if let adjectiveId = getI18nId(by: formatted?.adjective, db: db), let subjectId = getI18nId(by: formatted?.subject, db: db){
-        return PackableNumbers([adjectiveId, subjectId])
-    }
-    return PackableNumbers([0, 0])
-}
 

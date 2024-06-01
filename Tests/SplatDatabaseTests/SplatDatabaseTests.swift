@@ -107,10 +107,11 @@ class Splat3DatabaseTests: XCTestCase {
     }
 
     func testFormatByName() {
-        let byname = "走运的赌命者"
+        let byname = "我是阿姨"
         let formatted = formatByname(byname)
         print(formatted?.adjective)
         print(formatted?.subject)
+        print(formatted?.male)
     }
 
 }
