@@ -61,13 +61,13 @@ jobs:
         migrator.registerMigration("insertI18nForVersion${{ env.latest_version }}") { db in  
             try self.updateI18n(db: db)  
         }
-
+        
         migrator.registerMigration("insertImageMapForVersion${{ env.latest_version }}") { db in
             try self.updateImageMap(db: db) 
         }
         return migrator
         EOF
-        sed -i '' -e '/return migrator/{r temp.txt' -e 'd;}' Sources/SplatDatabase/SplatDatabase.swift
+        sed -i '/return migrator/r temp.txt' Sources/SplatDatabase/SplatDatabase.swift
         rm temp.txt
 
     - name: Commit and push changes
