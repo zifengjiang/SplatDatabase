@@ -113,7 +113,7 @@ def get_title_map():
         for key, value in json_data["CommonMsg/Byname/BynameAdjective"].items():
             id = f"TitleAdjective-{key}"
             adjectives.append({
-                "key": re.sub(r"\[.+?\]|-", "", value),
+                "key": re.sub(r"\[.+?\]", "", value),
                 "value": {
                     "id": id,
                     "index": i,
@@ -127,12 +127,12 @@ def get_title_map():
                 alt_key = f"{neutral_key}_1"
                 if "group=0001" in json_data["CommonMsg/Byname/BynameSubject"].get(alt_key, ""):
                     id = f"TitleSubject-{neutral_key}"
-                    subject[re.sub(r"\[.+?\]|-", "", value)] = id
+                    subject[re.sub(r"\[.+?\]", "", value)] = id
                 else:
                     id = f"TitleSubject-{key}"
-                    subject[re.sub(r"\[.+?\]|-", "", value)] = id
+                    subject[re.sub(r"\[.+?\]", "", value)] = id
                     alt_id = f"TitleSubject-{alt_key}"
-                    subject[re.sub(r"\[.+?\]|-", "", json_data["CommonMsg/Byname/BynameSubject"]
+                    subject[re.sub(r"\[.+?\]", "", json_data["CommonMsg/Byname/BynameSubject"]
                             [alt_key])] = alt_id
 
         subjects.append(subject)
