@@ -58,8 +58,7 @@ extension CoopPlayerResult: PreComputable {
             .fetchAll(db)
 
         for index in rows.indices {
-            let player:Player? = try Player.create(from: db, identifier: (rows[index].id!, "coopPlayerResultId"))
-            rows[index].player = player
+            rows[index].player = try Player.create(from: db, identifier: (rows[index].id!, "coopPlayerResultId"))
             let specialWeapon = try ImageMap.fetchOne(db, key: rows[index].specialWeaponId)
             rows[index].specialWeaponName = specialWeapon?.name
             rows[index].weapons = try String.fetchAll(db, sql: """

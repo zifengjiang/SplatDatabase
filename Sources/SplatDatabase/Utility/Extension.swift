@@ -90,9 +90,9 @@ extension Dictionary where Key == String, Value == JSON {
     func toGearPackableNumbers(db:Database) -> PackableNumbers{
         let id = getImageId(hash:self["originalImage"]?["url"].string?.getImageHash(), db: db)
         let primaryGearPower = getImageId(hash:self["primaryGearPower"]?["image"]["url"].string?.getImageHash(),db: db)
-        let additonalGearPower:[UInt16] = self["additionalGearPowers"]?.array?.compactMap{getImageId(hash:$0["image"]["url"].string?.getImageHash(),db: db)} ?? []
-        
-        return PackableNumbers([id,primaryGearPower] + additonalGearPower)
+        let additionalGearPower:[UInt16] = self["additionalGearPowers"]?.array?.compactMap{getImageId(hash:$0["image"]["url"].string?.getImageHash(),db: db)} ?? []
+
+        return PackableNumbers([id,primaryGearPower] + additionalGearPower)
     }
     
     

@@ -1,5 +1,6 @@
 import Foundation
 import GRDB
+import SwiftUI
 
 public struct PackableNumbers:Codable {
     var numbers: [UInt16]  // 使用 UInt16 存储，因为它足够容纳 0...4095 的值
@@ -72,3 +73,12 @@ extension PackableNumbers: DatabaseValueConvertible {
     }
 }
 
+extension PackableNumbers {
+    func toColor() -> Color {
+        let r = Double(self[0]) / 255.0
+        let g = Double(self[1]) / 255.0
+        let b = Double(self[2]) / 255.0
+        let a = Double(self[3]) / 255.0
+        return Color(red: r, green: g, blue: b, opacity: a)
+    }
+}

@@ -16,7 +16,7 @@ public struct ImageMap:Codable, FetchableRecord, PersistableRecord{
     }
 }
 
-public func getImageId(for nameId:String? = nil,hash:String? = nil, db:Database) -> UInt16 {
+public func getImageId(for nameId:String? = nil, hash:String? = nil, db:Database) -> UInt16 {
     if let nameId = nameId {
         let row = try! Row.fetchOne(db, sql: "SELECT id FROM imageMap WHERE nameId = ?",arguments:[nameId])
         return row?["id"] ?? 0
@@ -31,15 +31,6 @@ public func getImageId(for nameId:String? = nil,hash:String? = nil, db:Database)
     return 0
 }
 
-public func getImageName(by id: UInt16, db:Database) -> String {
-    let row = try! Row.fetchOne(db, sql: "SELECT name FROM imageMap WHERE id = ?",arguments:[id])
-    return row?["name"] ?? ""
-}
-
-public func getImageNameId(by id:UInt16,db:Database) -> String{
-    let row = try! Row.fetchOne(db, sql: "SELECT nameId FROM imageMap WHERE id = ?",arguments:[id])
-    return row?["nameId"] ?? ""
-}
 
 extension SplatDatabase {
     public func updateImageMap(db: Database) throws {

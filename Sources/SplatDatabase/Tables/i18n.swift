@@ -21,8 +21,8 @@ struct I18n: Codable, FetchableRecord, PersistableRecord {
         // 使用字典初始化本地化数据
     init(key: String, translations: [String: String?]) {
         self.key = key
-        self.zhCN = translations["zhCN"] ?? nil
-        self.zhTW = translations["zhTW"] ?? nil
+        self.zhCN = translations["zh-Hans"] ?? nil
+        self.zhTW = translations["zh-Hant"] ?? nil
         self.en = translations["en"] ?? nil
         self.ja = translations["ja"] ?? nil
         self.ko = translations["ko"] ?? nil
@@ -39,17 +39,6 @@ public func getI18nId(by key:String?, db:Database) -> UInt16?{
     guard let key = key else{ return nil }
     let row = try! Row.fetchOne(db, sql: "SELECT id FROM i18n WHERE key = ?",arguments:[key])
     return row?["id"] ?? nil
-}
-
-public func getI18Name(by key:String?, db:Database) -> String?{
-    guard let key = key else{ return nil }
-    let row = try! Row.fetchOne(db, sql: "SELECT en FROM i18n WHERE key = ?",arguments:[key])
-    return row?["en"] ?? nil
-}
-
-public func getI18Name(by id:Int, db:Database) -> String?{
-    let row = try! Row.fetchOne(db, sql: "SELECT key FROM i18n WHERE id = ?",arguments:[id])
-    return row?["key"] ?? nil
 }
 
 extension SplatDatabase {
@@ -91,8 +80,8 @@ extension SplatDatabase {
             "nl",
             "kr",
             "ru",
-            "zhCN",
-            "zhTW"
+            "zh-Hans",
+            "zh-Hant"
         ]
 
         var localizationData: [String: [String: String?]] = [:]

@@ -111,7 +111,7 @@ extension Coop: PreComputable {
     public static func create(from db: Database, identifier: Int64) throws -> Coop? {
         let row = try Coop.fetchOne(db, key: identifier)
         if var row = row {
-            row.suppliedWeapons = Array(0..<4).compactMap { getImageName(by: row.suppliedWeapon[$0], db: db)}
+            row.suppliedWeapons = try Array(0..<4).compactMap { try ImageMap.fetchOne(db, key: row.suppliedWeapon[$0])?.name}
             if let boss = row.boss{
                 row.bossName = try ImageMap.fetchOne(db, key: boss)?.name
             }

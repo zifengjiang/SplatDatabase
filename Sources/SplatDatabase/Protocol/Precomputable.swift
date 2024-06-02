@@ -15,7 +15,7 @@ extension PreComputable {
 }
 
 extension PreComputable {
-    public static func fetch(identifier: Identifier) -> AnyPublisher<Self?, Error>{
+    public static func fetchOne(identifier: Identifier) -> AnyPublisher<Self?, Error>{
         ValueObservation
             .tracking { db in
                 try Self.create(from: db, identifier: identifier)

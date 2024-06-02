@@ -1,4 +1,5 @@
 import Foundation
+import SwiftUI
 import GRDB
 import SwiftyJSON
 
@@ -18,9 +19,6 @@ public struct Player: Codable, FetchableRecord, PersistableRecord {
 
     // MARK: - Coop Attributes
     public var uniformId: UInt16?
-
-    // MARK: - computed properties
-    public var uniformName: String? = nil
 
     // MARK: - Battle Attributes
     public var paint: Int?
@@ -77,6 +75,10 @@ public struct Player: Codable, FetchableRecord, PersistableRecord {
         case coopPlayerResultId
     }
 
+    // MARK: - computed properties
+    public var uniformName: String? = nil
+    public var _nameplate: Nameplate? = nil
+
     // MARK: - init from json
     public init(json: JSON, vsTeamId: Int64? = nil, coopPlayerResultId: Int64? = nil, db:Database) {
         self.coopPlayerResultId = coopPlayerResultId
@@ -131,6 +133,7 @@ extension Player: PreComputable {
         for index in rows.indices {
             let uniform = try ImageMap.fetchOne(db, key: rows[index].uniformId)
             rows[index].uniformName = uniform?.name
+            rows[index]._nameplate = .init(nameplate: rows[index].nameplate, textColor: rows[index].nameplateTextColor, db: db)
         }
         return rows
     }
@@ -143,13 +146,37 @@ extension Player: PreComputable {
 
         if var row = row {
             row.uniformName = try ImageMap.fetchOne(db, key: row.uniformId)?.name
+            row._nameplate = .init(nameplate: row.nameplate, textColor: row.nameplateTextColor, db: db)
             return row
         }
         return row
     }
 }
 
+public struct Nameplate {
+    public let badges: [String??]
+    public let background: String
+    public let textColor: Color
 
+    public init(nameplate:PackableNumbers, textColor:PackableNumbers, db: Database){
+        let nameplateId = nameplate[0]
+        self.background = try! ImageMap.fetchOne(db, key: nameplateId)?.name ?? "Npl_Catalog_Season01_Lv01"
+        var _badges: [String?] = []
+        Array(1..<4).forEach { i in
+            if nameplate[i] == 0{
+                _badges.append(nil)
+            }else{
+                _badges.append(try! ImageMap.fetchOne(db, key: nameplate[i])?.name)
+            }
+        }
+        self.badges = _badges
+        self.textColor = textColor.toColor()
+    }
+}
 
-
+public struct Gear {
+    public let gear:String
+    public let primaryPower:String
+    public let additionalPower:String
+}
 
