@@ -8,7 +8,7 @@ public struct Player: Codable, FetchableRecord, PersistableRecord {
     public var id: Int64?
     public var isCoop: Bool
 
-    // Common Attributes
+        // Common Attributes
     public var sp3PrincipalId: String
     public var byname: String
     public var name: String
@@ -17,10 +17,10 @@ public struct Player: Codable, FetchableRecord, PersistableRecord {
     public var nameplate: PackableNumbers
     public var nameplateTextColor: PackableNumbers
 
-    // MARK: - Coop Attributes
+        // MARK: - Coop Attributes
     public var uniformId: UInt16?
 
-    // MARK: - Battle Attributes
+        // MARK: - Battle Attributes
     public var paint: Int?
     public var weaponId: UInt16?
     public var headGear: PackableNumbers
@@ -31,21 +31,21 @@ public struct Player: Codable, FetchableRecord, PersistableRecord {
     public var festGrade: String?
     public var isMyself: Bool?
 
-    // MARK: - Battle Result Attributes
+        // MARK: - Battle Result Attributes
     public var kill: Int?
     public var death: Int?
     public var assist: Int?
     public var special: Int?
     public var noroshiTry: Int?
 
-    // MARK: - References to vsTeam
+        // MARK: - References to vsTeam
     public var vsTeamId: Int64?
     public var coopPlayerResultId: Int64?
 
-    // MARK: - Database table name
+        // MARK: - Database table name
     public static let databaseTableName = "player"
 
-    // MARK: - CodingKeys
+        // MARK: - CodingKeys
     enum CodingKeys: String, CodingKey {
         case id
         case isCoop
@@ -75,11 +75,14 @@ public struct Player: Codable, FetchableRecord, PersistableRecord {
         case coopPlayerResultId
     }
 
-    // MARK: - computed properties
+        // MARK: - computed properties
     public var uniformName: String? = nil
     public var _nameplate: Nameplate? = nil
+    public var _headGear:Gear? = nil
+    public var _clothingGear:Gear? = nil
+    public var _shoesGear:Gear? = nil
 
-    // MARK: - init from json
+        // MARK: - init from json
     public init(json: JSON, vsTeamId: Int64? = nil, coopPlayerResultId: Int64? = nil, db:Database) {
         self.coopPlayerResultId = coopPlayerResultId
         self.vsTeamId = vsTeamId
@@ -134,6 +137,11 @@ extension Player: PreComputable {
             let uniform = try ImageMap.fetchOne(db, key: rows[index].uniformId)
             rows[index].uniformName = uniform?.name
             rows[index]._nameplate = .init(nameplate: rows[index].nameplate, textColor: rows[index].nameplateTextColor, db: db)
+            if !rows[index].isCoop{
+                rows[index]._headGear  = .init(gear: rows[index].headGear, db: db)
+                rows[index]._clothingGear  = .init(gear: rows[index].clothingGear, db: db)
+                rows[index]._shoesGear  = .init(gear: rows[index].shoesGear, db: db)
+            }
         }
         return rows
     }
@@ -147,6 +155,11 @@ extension Player: PreComputable {
         if var row = row {
             row.uniformName = try ImageMap.fetchOne(db, key: row.uniformId)?.name
             row._nameplate = .init(nameplate: row.nameplate, textColor: row.nameplateTextColor, db: db)
+            if !row.isCoop{
+                row._headGear  = .init(gear: row.headGear, db: db)
+                row._clothingGear  = .init(gear: row.clothingGear, db: db)
+                row._shoesGear  = .init(gear: row.shoesGear, db: db)
+            }
             return row
         }
         return row
@@ -154,29 +167,53 @@ extension Player: PreComputable {
 }
 
 public struct Nameplate {
-    public let badges: [String??]
+    public let badges: [String?]
     public let background: String
     public let textColor: Color
 
-    public init(nameplate:PackableNumbers, textColor:PackableNumbers, db: Database){
+    public init(nameplate: PackableNumbers, textColor: PackableNumbers, db: Database) {
         let nameplateId = nameplate[0]
-        self.background = try! ImageMap.fetchOne(db, key: nameplateId)?.name ?? "Npl_Catalog_Season01_Lv01"
-        var _badges: [String?] = []
-        Array(1..<4).forEach { i in
-            if nameplate[i] == 0{
-                _badges.append(nil)
-            }else{
-                _badges.append(try! ImageMap.fetchOne(db, key: nameplate[i])?.name)
-            }
+        self.background = Nameplate.fetchName(db: db, key: nameplateId) ?? "Npl_Catalog_Season01_Lv01"
+
+        self.badges = (1..<4).map { i in
+            nameplate[i] == 0 ? nil : Nameplate.fetchName(db: db, key: nameplate[i])
         }
-        self.badges = _badges
+
         self.textColor = textColor.toColor()
     }
-}
 
+    private static func fetchName(db: Database, key: UInt16) -> String? {
+        return try? ImageMap.fetchOne(db, key: key)?.name
+    }
+}
 public struct Gear {
-    public let gear:String
-    public let primaryPower:String
-    public let additionalPower:String
+    public let gear: String
+    public let gearName: String
+    public let primaryPower: String
+    public let additionalPowers: [String]
+
+    public init(gear: PackableNumbers, db: Database) {
+        let gearId = gear[0]
+        let primaryPowerId = gear[1]
+        let additionalPowerIds = (2..<5).map { gear[$0] }
+
+        guard let gearRow = try? ImageMap.fetchOne(db, key: gearId) else {
+            fatalError("Failed to fetch gear row for gearId \(gearId)")
+        }
+        self.gear = gearRow.name
+        self.gearName = gearRow.hash
+
+        guard let primaryPowerRow = try? ImageMap.fetchOne(db, key: primaryPowerId) else {
+            fatalError("Failed to fetch primary power for primaryPowerId \(primaryPowerId)")
+        }
+        self.primaryPower = primaryPowerRow.name
+
+        self.additionalPowers = additionalPowerIds.compactMap { id in
+            guard id != 0, let additionalPowerRow = try? ImageMap.fetchOne(db, key: id) else {
+                return nil
+            }
+            return additionalPowerRow.name
+        }
+    }
 }
 
