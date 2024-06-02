@@ -86,7 +86,7 @@ public struct Player: Codable, FetchableRecord, PersistableRecord {
     public init(json: JSON, vsTeamId: Int64? = nil, coopPlayerResultId: Int64? = nil, db:Database) {
         self.coopPlayerResultId = coopPlayerResultId
         self.vsTeamId = vsTeamId
-        self.sp3PrincipalId = json["id"].stringValue.extractUserId()
+        self.sp3PrincipalId = json["id"].stringValue.extractPlayerId()
         self.byname = json["byname"].stringValue
         self.name = json["name"].stringValue
         self.nameId = json["nameId"].stringValue
