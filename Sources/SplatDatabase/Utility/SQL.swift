@@ -118,6 +118,53 @@ ORDER BY
     waterLevel;
 """
 
+let coop_player_status_sql = """
+    WITH player_stats AS (
+    SELECT
+        player.*,
+        coop_view.GroupID,
+        COUNT(*) OVER (PARTITION BY player.sp3PrincipalId) AS count,
+        ROW_NUMBER() OVER (PARTITION BY player.sp3PrincipalId ORDER BY player.id) AS row_num,
+        AVG(coopPlayerResult.defeatEnemyCount) OVER (PARTITION BY player.sp3PrincipalId, coop_view.GroupID) AS defeatEnemyCount,
+        AVG(coopPlayerResult.deliverCount) OVER (PARTITION BY player.sp3PrincipalId, coop_view.GroupID) AS deliverCount,
+        AVG(coopPlayerResult.goldenAssistCount) OVER (PARTITION BY player.sp3PrincipalId, coop_view.GroupID) AS goldenAssistCount,
+        AVG(coopPlayerResult.goldenDeliverCount) OVER (PARTITION BY player.sp3PrincipalId, coop_view.GroupID) AS goldenDeliverCount,
+        AVG(coopPlayerResult.rescueCount) OVER (PARTITION BY player.sp3PrincipalId, coop_view.GroupID) AS rescueCount,
+        AVG(coopPlayerResult.rescuedCount) OVER (PARTITION BY player.sp3PrincipalId, coop_view.GroupID) AS rescuedCount
+    FROM
+        player
+    JOIN
+        coopPlayerResult ON coopPlayerResult.id = player.coopPlayerResultId
+    JOIN
+        coop_view ON coopPlayerResult.coopId = coop_view.id
+    WHERE
+
+        coopPlayerResult.'order' <> 0
+        AND coop_view.accountId = ?
+        AND coop_view.GroupID = ?
+    )
+    SELECT
+        name,
+        byname,
+        nameId,
+        nameplate,
+        nameplateTextColor,
+        uniformId,
+        defeatEnemyCount,
+        deliverCount,
+        goldenAssistCount,
+        goldenDeliverCount,
+        rescueCount,
+        rescuedCount,
+        count
+    FROM
+        player_stats
+    WHERE
+        row_num = 1
+    ORDER BY
+        count DESC;
+"""
+
 let last_500_coop_sql = """
     SELECT
         CASE WHEN coop.wave = 3
@@ -198,6 +245,7 @@ public enum SplatDatabaseSQL {
     case wave_result(accountId: Int, GroupID: Int)
     case last_500_coop(accountId: Int)
     case last_500_battle(accountId: Int)
+    case coop_player_status(accountId: Int, GroupID: Int)
     case unknown
 
     public var request: SQLRequest<Row> {
@@ -216,6 +264,8 @@ public enum SplatDatabaseSQL {
             return SQLRequest(sql: last_500_coop_sql, arguments: [accountId])
         case .last_500_battle(let accountId):
             return SQLRequest(sql: last_500_battle_sql, arguments: [accountId])
+        case .coop_player_status(let accountId, let GroupID):
+            return SQLRequest(sql: coop_player_status_sql, arguments: [accountId, GroupID])
         case .unknown:
             return SQLRequest(sql: "")
         }
