@@ -144,8 +144,7 @@ extension SplatDatabase{
     }
 
     public func insertCoop(json:JSON, db:Database) throws {
-        try db.inTransaction {
-            do{
+
                 let userId = json["id"].stringValue.extractUserId()
                 let userCount = try Int.fetchOne(db, sql: "SELECT COUNT(*) FROM account WHERE sp3Id = ?", arguments: [userId])!
                 if userCount == 0{
@@ -188,14 +187,9 @@ extension SplatDatabase{
                 for (_,element) in json["enemyResults"].arrayValue.enumerated(){
                     try CoopEnemyResult(json: element, coopId: coopId,db: db).insert(db)
                 }
-                return .commit
-            }catch{
-                print("insertCoop error \(error)")
-                print(json["id"].stringValue)
-                return .rollback
-            }
+
         }
-    }
+    
 
     public func insertCoops(jsons:[JSON], checkExist:Bool = true) async throws {
         try await self.dbQueue.write { db in
