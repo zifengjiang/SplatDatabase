@@ -116,62 +116,62 @@ extension SplatDatabase {
 }
 
 
-extension SplatDatabase.Filter {
-    func buildBattleQuery() -> SQLRequest<Row> {
-        var conditions: [String] = []
-        var arguments: [DatabaseValueConvertible] = []
-        
-        if let modes = modes, !modes.isEmpty {
-            let modePlaceholders = modes.map { _ in "?" }.joined(separator: ", ")
-            conditions.append("battle.mode IN (\(modePlaceholders))")
-            arguments.append(contentsOf: modes)
-        }
-        
-        if let rules = rules, !rules.isEmpty {
-            let rulePlaceholders = rules.map { _ in "?" }.joined(separator: ", ")
-            conditions.append("battle.rule IN (\(rulePlaceholders))")
-            arguments.append(contentsOf: rules)
-        }
-        
-        if let stageIds = stageIds, !stageIds.isEmpty {
-            let stageIdPlaceholders = stageIds.map { _ in "?" }.joined(separator: ", ")
-            conditions.append("battle.stageId IN (\(stageIdPlaceholders))")
-            arguments.append(contentsOf: stageIds)
-        }
-        
-        if let weaponIds = weaponIds, !weaponIds.isEmpty {
-            let weaponIdPlaceholders = weaponIds.map { _ in "?" }.joined(separator: ", ")
-            conditions.append("player.weaponId IN (\(weaponIdPlaceholders)) AND player.isCoop = 0")
-            arguments.append(contentsOf: weaponIds)
-        }
-        
-        if let start = start {
-            conditions.append("battle.playedTime >= ?")
-            arguments.append(start)
-        }
-        
-        if let end = end {
-            conditions.append("battle.playedTime <= ?")
-            arguments.append(end)
-        }
-        
-        let whereClause = conditions.isEmpty ? "1" : conditions.joined(separator: " AND ")
-        let sql = """
-        SELECT battle.* FROM battle
-        JOIN vsTeam ON battle.id = vsTeam.battleId
-        JOIN player ON vsTeam.id = player.vsTeamId
-        WHERE \(whereClause) AND player.isMyself = 1 AND accountId = \(accountId)
-        """
-        
-        return SQLRequest<Row>(sql: sql, arguments: StatementArguments(arguments))
-    }
-}
-
-extension SplatDatabase {
-    public func eachBattles(db:Database, filter:Filter, body: (Battle) -> Void) throws {
-        let cursor = try Row.fetchCursor(db, filter.buildBattleQuery())
-        while let row = try cursor.next() {
-            try body(Battle(row: row))
-        }
-    }
-}
+//extension SplatDatabase.Filter {
+//    func buildBattleQuery() -> SQLRequest<Row> {
+//        var conditions: [String] = []
+//        var arguments: [DatabaseValueConvertible] = []
+//        
+//        if let modes = modes, !modes.isEmpty {
+//            let modePlaceholders = modes.map { _ in "?" }.joined(separator: ", ")
+//            conditions.append("battle.mode IN (\(modePlaceholders))")
+//            arguments.append(contentsOf: modes)
+//        }
+//        
+//        if let rules = rules, !rules.isEmpty {
+//            let rulePlaceholders = rules.map { _ in "?" }.joined(separator: ", ")
+//            conditions.append("battle.rule IN (\(rulePlaceholders))")
+//            arguments.append(contentsOf: rules)
+//        }
+//        
+//        if let stageIds = stageIds, !stageIds.isEmpty {
+//            let stageIdPlaceholders = stageIds.map { _ in "?" }.joined(separator: ", ")
+//            conditions.append("battle.stageId IN (\(stageIdPlaceholders))")
+//            arguments.append(contentsOf: stageIds)
+//        }
+//        
+//        if let weaponIds = weaponIds, !weaponIds.isEmpty {
+//            let weaponIdPlaceholders = weaponIds.map { _ in "?" }.joined(separator: ", ")
+//            conditions.append("player.weaponId IN (\(weaponIdPlaceholders)) AND player.isCoop = 0")
+//            arguments.append(contentsOf: weaponIds)
+//        }
+//        
+//        if let start = start {
+//            conditions.append("battle.playedTime >= ?")
+//            arguments.append(start)
+//        }
+//        
+//        if let end = end {
+//            conditions.append("battle.playedTime <= ?")
+//            arguments.append(end)
+//        }
+//        
+//        let whereClause = conditions.isEmpty ? "1" : conditions.joined(separator: " AND ")
+//        let sql = """
+//        SELECT battle.* FROM battle
+//        JOIN vsTeam ON battle.id = vsTeam.battleId
+//        JOIN player ON vsTeam.id = player.vsTeamId
+//        WHERE \(whereClause) AND player.isMyself = 1 AND accountId = \(accountId)
+//        """
+//        
+//        return SQLRequest<Row>(sql: sql, arguments: StatementArguments(arguments))
+//    }
+//}
+//
+//extension SplatDatabase {
+//    public func eachBattles(db:Database, filter:Filter, body: (Battle) -> Void) throws {
+//        let cursor = try Row.fetchCursor(db, filter.buildBattleQuery())
+//        while let row = try cursor.next() {
+//            try body(Battle(row: row))
+//        }
+//    }
+//}

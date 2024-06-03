@@ -197,86 +197,21 @@ extension SplatDatabase{
         }
     }
 
-    public func insertCoops(jsons:[JSON], checkExist:Bool = true) throws {
-        self.dbQueue.customAsyncWrite { db in
-            do{
-                for json in jsons{
-                    if checkExist{
-                        if try self.isCoopExist(id: json["id"].stringValue,db: db){
-                            continue
-                        }
+    public func insertCoops(jsons:[JSON], checkExist:Bool = true) async throws {
+        try await self.dbQueue.write { db in
+            for json in jsons{
+                if checkExist{
+                    if try self.isCoopExist(id: json["id"].stringValue,db: db){
+                        continue
                     }
-                    try self.insertCoop(json: json, db: db)
                 }
-            } catch{
-                print("insertCoop error \(error)")
-            }
-        } completion: { _, error in
-            if case let .failure(error) = error {
-                os_log("Database Error: [saveJob] \(error.localizedDescription)")
+                try self.insertCoop(json: json, db: db)
             }
         }
     }
 }
 
-extension SplatDatabase.Filter {
-    func buildCoopQuery() -> SQLRequest<Row> {
-        var conditions: [String] = []
-        var arguments: [DatabaseValueConvertible] = []
 
-        if let rules = rules, !rules.isEmpty {
-            let rulePlaceholders = rules.map { _ in "?" }.joined(separator: ", ")
-            conditions.append("coop.rule IN (\(rulePlaceholders))")
-            arguments.append(contentsOf: rules)
-        }
-
-        if let stageIds = stageIds, !stageIds.isEmpty {
-            let stageIdPlaceholders = stageIds.map { _ in "?" }.joined(separator: ", ")
-            conditions.append("coop.stageId IN (\(stageIdPlaceholders))")
-            arguments.append(contentsOf: stageIds)
-        }
-
-        if let weaponIds = weaponIds, !weaponIds.isEmpty {
-            let weaponIdPlaceholders = weaponIds.map { _ in "?" }.joined(separator: ", ")
-            conditions.append("weapon.imageMapId IN (\(weaponIdPlaceholders)) AND coopPlayerResult.\"order\" = 0")
-            arguments.append(contentsOf: weaponIds)
-        }
-
-        if let start = start {
-            conditions.append("coop.playedTime >= ?")
-            arguments.append(start)
-        }
-
-        if let end = end {
-            conditions.append("coop.playedTime <= ?")
-            arguments.append(end)
-        }
-
-        let whereClause = conditions.isEmpty ? "1" : conditions.joined(separator: " AND ")
-        let sql = """
-            SELECT
-                coop.*
-                coop_view.GroupID
-            FROM
-                coop
-                JOIN coopPlayerResult ON coop.id = coopPlayerResult.coopId
-                JOIN weapon ON coopPlayerResult.id = weapon.coopPlayerResultId
-                JOIN coop_view on coop_view.id = coop.id
-            WHERE \(whereClause) AND accountId = \(accountId)
-        """
-
-        return SQLRequest<Row>(sql: sql, arguments: StatementArguments(arguments))
-    }
-}
-
-extension SplatDatabase {
-    public func eachCoops(db:Database, filter:Filter, handler: (Coop) throws -> Void) throws {
-        let cursor = try Row.fetchCursor(db, filter.buildCoopQuery())
-        while let row = try cursor.next() {
-            try handler(Coop(row: row))
-        }
-    }
-}
 
 extension SplatDatabase {
     public func isCoopExist(id:String, db:Database?) throws -> Bool {
