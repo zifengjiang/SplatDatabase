@@ -3,13 +3,16 @@ import SwiftyJSON
 import GRDB
 
 extension String {
-    func getImageHash() -> String {
+    func getImageHash() -> String? {
         let splitted = self.split(separator: "/")
         guard let last = splitted.last else {
-            return ""
+            return nil
         }
         let hashPart = last.split(separator: "_")
-        return String(hashPart.first ?? "")
+        if let first = hashPart.first{
+            return String(first)
+        }
+        return nil
     }
     
     func utcToDate() -> Date {

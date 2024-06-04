@@ -1,10 +1,3 @@
-    //
-    //  File.swift
-    //
-    //
-    //  Created by 姜锋 on 5/9/24.
-    //
-
 import XCTest
 import GRDB
 import SwiftyJSON
@@ -106,12 +99,23 @@ class Splat3DatabaseTests: XCTestCase {
         }
     }
 
-    func testFormatByName() {
+    func testFormatByName() async {
         let byname = "5-Year-Planning Client"
-        let formatted = formatByname(byname)
-        print(formatted?.adjective)
-        print(formatted?.subject)
-        print(formatted?.male)
+        let formatted = await formatByname(byname)
+//        print(formatted?.adjective)
+//        print(formatted?.subject)
+//        print(formatted?.male)
+    }
+
+    func testInsertSchedule() async throws {
+        let url = URL(string: "https://splatoon3ink-archive.nyc3.digitaloceanspaces.com/2024/06/04/2024-06-04.00-00-00.schedules.json")!
+        let (data, response) = try await URLSession.shared.data(for: URLRequest(url: url))
+
+        let json = try JSON(data:data)
+        
+        try await dbManager.dbQueue.write { db in
+            try insertSchedules(json: json, db: db)
+        }
     }
 
 }
