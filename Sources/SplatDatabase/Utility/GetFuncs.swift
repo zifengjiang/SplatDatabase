@@ -219,5 +219,6 @@ func getUnknownMap() -> [ImageMap]{
     unknowns.append(ImageMap(nameId: Data("Unknown-1".utf8).base64EncodedString(), name: "Unknown-1", hash: "473fffb2442075078d8bb7125744905abdeae651b6a5b7453ae295582e45f7d1"))
     unknowns.append(ImageMap(nameId: Data("Unknown-2".utf8).base64EncodedString(), name: "Unknown-2", hash: "9d7272733ae2f2282938da17d69f13419a935eef42239132a02fcf37d8678f10"))
     unknowns.append(ImageMap(nameId: Data("CoopEnemy-31".utf8).base64EncodedString(), name: "RandomBoss", hash: "randomboss"))
+    unknowns.append(ImageMap(nameId: Data("UnKnownStage".utf8).base64EncodedString(), name: "UnKnownStage", hash: "53e1af84e02048eaf93c283489026a92d3a170eb3ebdf300c124cbe4e553e63b"))
     return unknowns
 }
