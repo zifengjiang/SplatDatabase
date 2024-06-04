@@ -21,9 +21,9 @@ public struct Schedule: Codable, FetchableRecord, PersistableRecord{
     }
 
     // MARK: - Computed Properties
-    var _stage: [ImageMap] = []
-    var _weapons: [ImageMap] = []
-    var _boss: ImageMap? = nil
+    public var _stage: [ImageMap] = []
+    public var _weapons: [ImageMap] = []
+    public var _boss: ImageMap? = nil
 
     public enum Mode: Int, Codable {
         case regular = 0
