@@ -124,7 +124,6 @@ public func insertSchedules(json:JSON, db:Database) throws {
         if !stages.isEmpty{
             let schedule = Schedule(startTime: $0["startTime"].stringValue.utcToDate(), endTime: $0["endTime"].stringValue.utcToDate(), mode: .bankara, stage: PackableNumbers(stages))
             try schedule.insert(db)
-            print("insert festSchedules")
         }
     }
 
@@ -148,6 +147,7 @@ public func insertSchedules(json:JSON, db:Database) throws {
     }
 }
 
+
 func getCoopSchedule(json:JSON, mode:Schedule.Mode, db:Database, name2hash:[String:String]) throws {
     let weapons = try json["setting"]["weapons"].arrayValue.compactMap {
         if let hash = $0["image"]["url"].stringValue.getImageHash(){
@@ -164,6 +164,8 @@ func getCoopSchedule(json:JSON, mode:Schedule.Mode, db:Database, name2hash:[Stri
         boss = try UInt16.fetchOne(db, sql: "SELECT id FROM imageMap WHERE hash = ?", arguments:[name2hash[name]])
     }else if let name = json["__splatoon3ink_king_salmonid_guess"].string{
         boss = try UInt16.fetchOne(db, sql: "SELECT id FROM imageMap WHERE hash = ?", arguments:[name2hash[name]])
+    }else{
+        boss = try UInt16.fetchOne(db, sql: "SELECT id FROM imageMap WHERE hash = ?", arguments:[name2hash["Cohozuna"]])
     }
 
     try Schedule(startTime: json["startTime"].stringValue.utcToDate(), endTime: json["endTime"].stringValue.utcToDate(), mode: mode, stage: PackableNumbers([stage]), weapons: PackableNumbers(weapons), boss: boss).insert(db)
@@ -183,7 +185,7 @@ extension Schedule: PreComputable{
     public static func create(from db: Database, identifier: SQLRequest<Schedule>) throws -> Self? {
         let row = try Schedule.fetchOne(db, identifier)
         if var row = row{
-            row._stage = try Array(0..<2).compactMap{
+            row._stage = try Array(0..<4).compactMap{
                 if row.stage[$0] != 0{
                     return try ImageMap.fetchOne(db, key: row.stage[$0])
                 }
@@ -197,9 +199,35 @@ extension Schedule: PreComputable{
                     return nil
                 }
             }
-            row._boss = try ImageMap.fetchOne(db, key: row.boss)
+            if let boss = row.boss{
+                row._boss = try ImageMap.fetchOne(db, key: boss)
+            }
             return row
         }
         return row
+    }
+
+    public static func create(from db: Database, identifier: SQLRequest<Schedule>) throws -> [Schedule] {
+        var rows = try Schedule.fetchAll(db, identifier)
+        for index in rows.indices{
+            rows[index]._stage = try Array(0..<4).compactMap{
+                if rows[index].stage[$0] != 0{
+                    return try ImageMap.fetchOne(db, key: rows[index].stage[$0])
+                }
+                return nil
+            }
+            if let weapons = rows[index].weapons{
+                rows[index]._weapons = try Array(0..<4).compactMap{
+                    if weapons[$0] != 0{
+                        return try ImageMap.fetchOne(db, key: weapons[$0])
+                    }
+                    return nil
+                }
+            }
+            if let boss = rows[index].boss{
+                rows[index]._boss = try ImageMap.fetchOne(db, key: boss)
+            }
+        }
+        return rows
     }
 }

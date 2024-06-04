@@ -311,13 +311,12 @@ public class SplatDatabase {
             t.autoIncrementedPrimaryKey("id")
             t.column("startTime", .datetime).notNull()
             t.column("endTime", .datetime).notNull()
-            /// 0: regular, 1: bankara open, 2: bankara challenge, 3: x, 4: event, 5: fest regular, 6:fest challenge, 7: fest tri color, 8: salmon run regular, 9: salmon run big run, 10: salmon run team contest
             t.column("mode", .integer).notNull()
             t.column("stage", .integer).notNull()
             t.column("weapons", .integer)
             t.column("boss", .integer)
 
-            t.uniqueKey(["startTime","endTime", "mode"], onConflict: .ignore)
+            t.uniqueKey(["startTime","endTime", "mode"], onConflict: .replace)
         }
 
         try db.execute(sql: coop_view_sql)

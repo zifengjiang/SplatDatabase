@@ -101,20 +101,44 @@ class Splat3DatabaseTests: XCTestCase {
 
     func testFormatByName() async {
         let byname = "5-Year-Planning Client"
-        let formatted = await formatByname(byname)
+        _ = await formatByname(byname)
 //        print(formatted?.adjective)
 //        print(formatted?.subject)
 //        print(formatted?.male)
     }
 
     func testInsertSchedule() async throws {
-        let url = URL(string: "https://splatoon3ink-archive.nyc3.digitaloceanspaces.com/2024/06/04/2024-06-04.00-00-00.schedules.json")!
-        let (data, response) = try await URLSession.shared.data(for: URLRequest(url: url))
+        for year in 2022..<2025 {
+            for month in 1..<13 {
+                for day in 1..<31 {
+                    if year == 2022 && month < 9  {
+                        continue
+                    }
+                    if year == 2022 && month == 9 && day < 17 {
+                        continue
+                    }
+                    for hour in 0..<24{
+                        let urlString = String(format: "https://splatoon3ink-archive.nyc3.digitaloceanspaces.com/%04d/%02d/%02d/%04d-%02d-%02d.%02d-00-00.schedules.json", year, month, day, year, month, day, hour)
 
-        let json = try JSON(data:data)
-        
-        try await dbManager.dbQueue.write { db in
-            try insertSchedules(json: json, db: db)
+                        guard let url = URL(string: urlString) else {
+                            print("Invalid URL: \(urlString)")
+                            continue
+                        }
+
+                        do {
+                            let (data, _) = try await URLSession.shared.data(for: URLRequest(url: url))
+                            let json = try JSON(data: data)
+
+                            try await dbManager.dbQueue.write { db in
+                                try insertSchedules(json: json, db: db)
+                            }
+                            break
+                        } catch {
+                            print("Failed to fetch or insert schedule for \(year)-\(month)-\(day): \(error)")
+                        }
+                    }
+                }
+            }
         }
     }
 
