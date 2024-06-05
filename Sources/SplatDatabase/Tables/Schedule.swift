@@ -97,7 +97,7 @@ public func insertSchedules(json:JSON, db:Database) throws {
     }
 
     try eventSchedules.forEach{
-        let vsStages = $0["eventMatchSetting"]["vsStages"].arrayValue
+        let vsStages = $0["leagueMatchSetting"]["vsStages"].arrayValue
         let stages = try vsStages.compactMap{
             if let hash = $0["image"]["url"].stringValue.getImageHash(){
                 return try UInt16.fetchOne(db, sql: "SELECT id FROM imageMap WHERE hash = ?", arguments:[hash])
