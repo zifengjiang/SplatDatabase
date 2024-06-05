@@ -99,7 +99,8 @@ public func insertSchedules(json:JSON, db:Database) throws {
     }
 
     try eventSchedules.forEach{
-        let vsStages = $0["leagueMatchSetting"]["vsStages"].arrayValue
+        let setting = $0["leagueMatchSetting"]
+        let vsStages = setting["vsStages"].arrayValue
         let stages = try vsStages.compactMap{
             if let hash = $0["image"]["url"].stringValue.getImageHash(){
                 return try UInt16.fetchOne(db, sql: "SELECT id FROM imageMap WHERE hash = ?", arguments:[hash])
@@ -110,7 +111,7 @@ public func insertSchedules(json:JSON, db:Database) throws {
         let timePeriods = $0["timePeriods"].arrayValue
         if !stages.isEmpty{
             try timePeriods.forEach{
-                try Schedule(startTime: $0["startTime"].stringValue.utcToDate(), endTime: $0["endTime"].stringValue.utcToDate(), mode: .event, rule1: Schedule.Rule(rawValue: $0["eventMatchSetting"]["vsRule"]["id"].stringValue.order) ?? .turfWar,stage: PackableNumbers(stages), event: $0["leagueMatchSetting"]["leagueMatchEvent"]["id"].string).insert(db)
+                try Schedule(startTime: $0["startTime"].stringValue.utcToDate(), endTime: $0["endTime"].stringValue.utcToDate(), mode: .event, rule1: Schedule.Rule(rawValue: $0["eventMatchSetting"]["vsRule"]["id"].stringValue.order) ?? .turfWar,stage: PackableNumbers(stages), event: setting["leagueMatchEvent"]["id"].string).insert(db)
             }
         }
     }
