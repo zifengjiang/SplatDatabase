@@ -111,7 +111,7 @@ public func insertSchedules(json:JSON, db:Database) throws {
         let timePeriods = $0["timePeriods"].arrayValue
         if !stages.isEmpty{
             try timePeriods.forEach{
-                try Schedule(startTime: $0["startTime"].stringValue.utcToDate(), endTime: $0["endTime"].stringValue.utcToDate(), mode: .event, rule1: Schedule.Rule(rawValue: $0["eventMatchSetting"]["vsRule"]["id"].stringValue.order) ?? .turfWar,stage: PackableNumbers(stages), event: setting["leagueMatchEvent"]["id"].string).insert(db)
+                try Schedule(startTime: $0["startTime"].stringValue.utcToDate(), endTime: $0["endTime"].stringValue.utcToDate(), mode: .event, rule1: Schedule.Rule(rawValue: setting["vsRule"]["id"].stringValue.order) ?? .turfWar,stage: PackableNumbers(stages), event: setting["leagueMatchEvent"]["id"].string).insert(db)
             }
         }
     }
