@@ -14,7 +14,11 @@ extension String {
         }
         return nil
     }
-    
+
+    var order:Int {
+        return self.base64DecodedString.split(separator: "-").last.flatMap{Int($0)} ?? 0
+    }
+
     func utcToDate() -> Date {
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ssZ"

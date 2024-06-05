@@ -7,6 +7,8 @@ public struct Schedule: Codable, FetchableRecord, PersistableRecord{
     public var startTime:Date
     public var endTime:Date
     public var mode:Mode
+    public var rule1:Rule
+    public var rule2:Rule?
     public var stage:PackableNumbers
     public var weapons:PackableNumbers?
     public var boss:UInt16?
@@ -15,6 +17,8 @@ public struct Schedule: Codable, FetchableRecord, PersistableRecord{
         case startTime
         case endTime
         case mode
+        case rule1
+        case rule2
         case stage
         case weapons
         case boss
@@ -31,10 +35,19 @@ public struct Schedule: Codable, FetchableRecord, PersistableRecord{
         case x
         case event
         case fest
-        case festTriColor
-        case salmonRunRegular
-        case salmonRunBigRun
-        case salmonRunTeamContest
+        case salmonRun
+    }
+
+    public enum Rule: Int, Codable, CaseIterable{
+        case turfWar = 0
+        case splatZones
+        case towerControl
+        case rainmaker
+        case clamBlitz
+        case triColor
+        case salmonRun
+        case bigRun
+        case teamContest
     }
 }
 
@@ -57,7 +70,7 @@ public func insertSchedules(json:JSON, db:Database) throws {
             return nil
         }
         if !stages.isEmpty{
-            let schedule = Schedule(startTime: $0["startTime"].stringValue.utcToDate(), endTime: $0["endTime"].stringValue.utcToDate(), mode: .regular, stage: PackableNumbers(stages))
+            let schedule = Schedule(startTime: $0["startTime"].stringValue.utcToDate(), endTime: $0["endTime"].stringValue.utcToDate(), mode: .regular, rule1:.turfWar, stage: PackableNumbers(stages))
             try schedule.insert(db)
         }
     }
@@ -73,8 +86,12 @@ public func insertSchedules(json:JSON, db:Database) throws {
                 return nil
             }
         }
+
         if !stages.isEmpty{
-            let schedule = Schedule(startTime: $0["startTime"].stringValue.utcToDate(), endTime: $0["endTime"].stringValue.utcToDate(), mode: .bankara, stage: PackableNumbers(stages))
+            let schedule = Schedule(startTime: $0["startTime"].stringValue.utcToDate(), endTime: $0["endTime"].stringValue.utcToDate(), mode: .bankara,
+                                    rule1:Schedule.Rule(rawValue: settings[0]["vsRule"]["id"].stringValue.order) ?? .turfWar,
+                                    rule2:Schedule.Rule(rawValue: settings[1]["vsRule"]["id"].stringValue.order) ?? .turfWar,
+                                    stage: PackableNumbers(stages))
             try schedule.insert(db)
         }
     }
@@ -91,7 +108,7 @@ public func insertSchedules(json:JSON, db:Database) throws {
         let timePeriods = $0["timePeriods"].arrayValue
 
         try timePeriods.forEach{
-            try Schedule(startTime: $0["startTime"].stringValue.utcToDate(), endTime: $0["endTime"].stringValue.utcToDate(), mode: .event, stage: PackableNumbers(stages)).insert(db)
+            try Schedule(startTime: $0["startTime"].stringValue.utcToDate(), endTime: $0["endTime"].stringValue.utcToDate(), mode: .event, rule1: Schedule.Rule(rawValue: $0["eventMatchSetting"]["vsRule"]["id"].stringValue.order) ?? .turfWar,stage: PackableNumbers(stages)).insert(db)
         }
     }
 
@@ -104,7 +121,7 @@ public func insertSchedules(json:JSON, db:Database) throws {
             return nil
         }
         if !stages.isEmpty{
-            let schedule = Schedule(startTime: $0["startTime"].stringValue.utcToDate(), endTime: $0["endTime"].stringValue.utcToDate(), mode: .regular, stage: PackableNumbers(stages))
+            let schedule = Schedule(startTime: $0["startTime"].stringValue.utcToDate(), endTime: $0["endTime"].stringValue.utcToDate(), mode: .x, rule1: Schedule.Rule(rawValue: $0["xMatchSetting"]["vsRule"]["id"].stringValue.order) ?? .splatZones, stage: PackableNumbers(stages))
             try schedule.insert(db)
         }
     }
@@ -122,7 +139,7 @@ public func insertSchedules(json:JSON, db:Database) throws {
             }
         }
         if !stages.isEmpty{
-            let schedule = Schedule(startTime: $0["startTime"].stringValue.utcToDate(), endTime: $0["endTime"].stringValue.utcToDate(), mode: .bankara, stage: PackableNumbers(stages))
+            let schedule = Schedule(startTime: $0["startTime"].stringValue.utcToDate(), endTime: $0["endTime"].stringValue.utcToDate(), mode: .fest, rule1: .turfWar, rule2: .turfWar, stage: PackableNumbers(stages))
             try schedule.insert(db)
         }
     }
@@ -135,20 +152,20 @@ public func insertSchedules(json:JSON, db:Database) throws {
     ]
 
     try salmonRunRegularSchedules.forEach {
-        try getCoopSchedule(json: $0, mode: .salmonRunRegular, db: db, name2hash: name2hash)
+        try getCoopSchedule(json: $0, mode: .salmonRun, rule:.salmonRun,db: db, name2hash: name2hash)
     }
 
     try salmonRunBigRunSchedules.forEach {
-        try getCoopSchedule(json: $0, mode: .salmonRunBigRun, db: db, name2hash: name2hash)
+        try getCoopSchedule(json: $0, mode: .salmonRun, rule:.bigRun, db: db, name2hash: name2hash)
     }
 
     try salmonRunTeamContestSchedules.forEach {
-        try getCoopSchedule(json: $0, mode: .salmonRunTeamContest, db: db, name2hash: name2hash)
+        try getCoopSchedule(json: $0, mode: .salmonRun, rule: .teamContest, db: db, name2hash: name2hash)
     }
 }
 
 
-func getCoopSchedule(json:JSON, mode:Schedule.Mode, db:Database, name2hash:[String:String]) throws {
+func getCoopSchedule(json:JSON, mode:Schedule.Mode, rule: Schedule.Rule, db:Database, name2hash:[String:String]) throws {
     let weapons = try json["setting"]["weapons"].arrayValue.compactMap {
         if let hash = $0["image"]["url"].stringValue.getImageHash(){
             return try UInt16.fetchOne(db, sql: "SELECT id FROM imageMap WHERE hash = ?", arguments:[hash])
@@ -168,18 +185,10 @@ func getCoopSchedule(json:JSON, mode:Schedule.Mode, db:Database, name2hash:[Stri
         boss = try UInt16.fetchOne(db, sql: "SELECT id FROM imageMap WHERE hash = ?", arguments:[name2hash["Cohozuna"]])
     }
 
-    try Schedule(startTime: json["startTime"].stringValue.utcToDate(), endTime: json["endTime"].stringValue.utcToDate(), mode: mode, stage: PackableNumbers([stage]), weapons: PackableNumbers(weapons), boss: boss).insert(db)
+    try Schedule(startTime: json["startTime"].stringValue.utcToDate(), endTime: json["endTime"].stringValue.utcToDate(), mode: mode, rule1:rule, stage: PackableNumbers([stage]), weapons: PackableNumbers(weapons), boss: boss).insert(db)
 }
 
 
-extension Schedule {
-    public init(from json: JSON, mode: Mode){
-        startTime = json["startTime"].stringValue.utcToDate()
-        endTime = json["endTime"].stringValue.utcToDate()
-        stage = PackableNumbers([0])
-        self.mode = mode
-    }
-}
 
 extension Schedule: PreComputable{
     public static func create(from db: Database, identifier: SQLRequest<Schedule>) throws -> Self? {

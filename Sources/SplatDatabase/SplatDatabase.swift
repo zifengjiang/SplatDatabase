@@ -312,6 +312,8 @@ public class SplatDatabase {
             t.column("startTime", .datetime).notNull()
             t.column("endTime", .datetime).notNull()
             t.column("mode", .integer).notNull()
+            t.column("rule1", .integer)
+            t.column("rule2", .integer)
             t.column("stage", .integer).notNull()
             t.column("weapons", .integer)
             t.column("boss", .integer)
