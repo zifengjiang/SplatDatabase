@@ -12,6 +12,7 @@ public struct Schedule: Codable, FetchableRecord, PersistableRecord{
     public var stage:PackableNumbers
     public var weapons:PackableNumbers?
     public var boss:UInt16?
+    public var event:String?
 
     public enum CodingKeys: String, CodingKey {
         case startTime
@@ -22,6 +23,7 @@ public struct Schedule: Codable, FetchableRecord, PersistableRecord{
         case stage
         case weapons
         case boss
+        case event
     }
 
     // MARK: - Computed Properties
@@ -106,9 +108,10 @@ public func insertSchedules(json:JSON, db:Database) throws {
         }
 
         let timePeriods = $0["timePeriods"].arrayValue
-
-        try timePeriods.forEach{
-            try Schedule(startTime: $0["startTime"].stringValue.utcToDate(), endTime: $0["endTime"].stringValue.utcToDate(), mode: .event, rule1: Schedule.Rule(rawValue: $0["eventMatchSetting"]["vsRule"]["id"].stringValue.order) ?? .turfWar,stage: PackableNumbers(stages)).insert(db)
+        if !stages.isEmpty{
+            try timePeriods.forEach{
+                try Schedule(startTime: $0["startTime"].stringValue.utcToDate(), endTime: $0["endTime"].stringValue.utcToDate(), mode: .event, rule1: Schedule.Rule(rawValue: $0["eventMatchSetting"]["vsRule"]["id"].stringValue.order) ?? .turfWar,stage: PackableNumbers(stages), event: $0["leagueMatchSetting"]["leagueMatchEvent"]["id"].string).insert(db)
+            }
         }
     }
 

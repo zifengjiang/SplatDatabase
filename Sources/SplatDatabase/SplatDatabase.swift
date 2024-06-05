@@ -317,6 +317,7 @@ public class SplatDatabase {
             t.column("stage", .integer).notNull()
             t.column("weapons", .integer)
             t.column("boss", .integer)
+            t.column("event", .text)
 
             t.uniqueKey(["startTime","endTime", "mode"], onConflict: .replace)
         }
