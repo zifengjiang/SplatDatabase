@@ -181,8 +181,8 @@ func getCoopSchedule(json:JSON, mode:Schedule.Mode, rule: Schedule.Rule, db:Data
 
     var boss:UInt16? = nil
 
-    if let name = json["setting"]["boss"]["name"].string{
-        boss = try UInt16.fetchOne(db, sql: "SELECT id FROM imageMap WHERE hash = ?", arguments:[name2hash[name]])
+    if let name = json["setting"]["boss"]["id"].string{
+        boss = try UInt16.fetchOne(db, sql: "SELECT id FROM imageMap WHERE nameId = ?", arguments:[name])
     }else if let name = json["__splatoon3ink_king_salmonid_guess"].string{
         boss = try UInt16.fetchOne(db, sql: "SELECT id FROM imageMap WHERE hash = ?", arguments:[name2hash[name]])
     }else{
