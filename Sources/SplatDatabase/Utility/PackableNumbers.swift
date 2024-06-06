@@ -54,6 +54,10 @@ extension PackableNumbers {
     }
 }
 
+extension PackableNumbers: Hashable {
+
+}
+
 extension PackableNumbers: DatabaseValueConvertible {
         /// 将 PackableNumbers 转换为 DatabaseValue
     public var databaseValue: DatabaseValue {

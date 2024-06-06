@@ -222,7 +222,7 @@ func getUnknownMap() -> [ImageMap]{
     //大型跑多地地图
     unknowns.append(ImageMap(nameId: Data("CoopStage--1".utf8).base64EncodedString(), name: "Multiple Sites", hash: "53e1af84e02048eaf93c283489026a92d3a170eb3ebdf300c124cbe4e553e63b"))
     // 暂时用横岗图片代替
-    unknowns.append(ImageMap(nameId: Data("CoopEnemy-30".utf8).base64EncodedString(), name: "Triumvirate", hash: "75f39ca054c76c0c33cd71177780708e679d088c874a66101e9b76b001df8254"))
+    unknowns.append(ImageMap(nameId: Data("CoopEnemy-30".utf8).base64EncodedString(), name: "Triumvirate", hash: ""))
     unknowns.append(ImageMap(nameId: Data("VsStage--999".utf8).base64EncodedString(), name: "DummyStage", hash: "59a42245071d692c58b9825886f89f95e092ae0aa83a46617fdb4cbcb2f5f2b8"))
     return unknowns
 }

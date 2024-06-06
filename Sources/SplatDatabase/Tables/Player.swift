@@ -91,9 +91,9 @@ public struct Player: Codable, FetchableRecord, PersistableRecord {
         self.name = json["name"].stringValue
         self.nameId = json["nameId"].stringValue
         self.species = json["species"].stringValue == "INKLING"
-        let nameplateBackground = getImageId(for: json["nameplate"]["background"]["id"].stringValue, db: db) ?? 0
+        let nameplateBackground = getImageId(for: json["nameplate"]["background"]["id"].stringValue, db: db)
         let nameplateBadges = json["nameplate"]["badges"].arrayValue.map{
-            getImageId(for:$0["id"].string, db: db) ?? 0
+            getImageId(for:$0["id"].string, db: db)
         }
 
         self.nameplate = PackableNumbers([nameplateBackground,]+nameplateBadges)
