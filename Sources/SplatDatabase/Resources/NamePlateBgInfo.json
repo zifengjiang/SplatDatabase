@@ -4561,6 +4561,25 @@
   },
   {
     "HowToGet": "Other",
+    "Id": 937,
+    "Order": 937,
+    "Season": -1,
+    "TextColor": {
+      "A": 1.0,
+      "B": 1.0,
+      "G": 1.0,
+      "R": 1.0
+    },
+    "UrokoPrice": {
+      "BronzeUrokoNum": 0,
+      "GoldUrokoNum": 0,
+      "SilverUrokoNum": 0
+    },
+    "UrokoUhlockLevel": 1,
+    "__RowId": "Npl_Trg_Season08_Lv01"
+  },
+  {
+    "HowToGet": "Other",
     "Id": 1,
     "Order": 1,
     "Season": 0,
