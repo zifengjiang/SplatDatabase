@@ -2,6 +2,7 @@
   {
     "GearClothesName": "Clt_COP001",
     "GearHeadName": "Hed_COP001",
+    "HowToGet": "Uroko",
     "Id": 1,
     "Order": 0.0,
     "Season": 1,
@@ -16,6 +17,7 @@
   {
     "GearClothesName": "Clt_COP002",
     "GearHeadName": "Hed_COP002",
+    "HowToGet": "Uroko",
     "Id": 2,
     "Order": 1.0,
     "Season": 1,
@@ -30,6 +32,7 @@
   {
     "GearClothesName": "Clt_COP003",
     "GearHeadName": "Hed_COP003",
+    "HowToGet": "Uroko",
     "Id": 3,
     "Order": 2.0,
     "Season": 1,
@@ -44,6 +47,7 @@
   {
     "GearClothesName": "Clt_COP004",
     "GearHeadName": "Hed_COP004",
+    "HowToGet": "Uroko",
     "Id": 4,
     "Order": 3.0,
     "Season": 1,
@@ -58,6 +62,7 @@
   {
     "GearClothesName": "Clt_COP005",
     "GearHeadName": "Hed_COP005",
+    "HowToGet": "Uroko",
     "Id": 5,
     "Order": 4.0,
     "Season": 1,
@@ -72,6 +77,7 @@
   {
     "GearClothesName": "Clt_COP006",
     "GearHeadName": "Hed_COP006",
+    "HowToGet": "Uroko",
     "Id": 6,
     "Order": 5.0,
     "Season": 1,
@@ -86,6 +92,7 @@
   {
     "GearClothesName": "Clt_COP007",
     "GearHeadName": "Hed_COP007",
+    "HowToGet": "Uroko",
     "Id": 7,
     "Order": 6.0,
     "Season": 1,
@@ -100,6 +107,7 @@
   {
     "GearClothesName": "Clt_COP008",
     "GearHeadName": "Hed_COP008",
+    "HowToGet": "Uroko",
     "Id": 8,
     "Order": 7.0,
     "Season": 3,
@@ -114,6 +122,7 @@
   {
     "GearClothesName": "Clt_COP009",
     "GearHeadName": "Hed_COP009",
+    "HowToGet": "Uroko",
     "Id": 9,
     "Order": 10.0,
     "Season": 3,
@@ -128,6 +137,7 @@
   {
     "GearClothesName": "Clt_COP010",
     "GearHeadName": "Hed_COP010",
+    "HowToGet": "Uroko",
     "Id": 10,
     "Order": 8.0,
     "Season": 3,
@@ -142,6 +152,7 @@
   {
     "GearClothesName": "Clt_COP011",
     "GearHeadName": "Hed_COP011",
+    "HowToGet": "Uroko",
     "Id": 11,
     "Order": 9.0,
     "Season": 3,
@@ -156,6 +167,7 @@
   {
     "GearClothesName": "Clt_COP012",
     "GearHeadName": "Hed_COP012",
+    "HowToGet": "Uroko",
     "Id": 12,
     "Order": 12.0,
     "Season": 5,
@@ -170,6 +182,7 @@
   {
     "GearClothesName": "Clt_COP013",
     "GearHeadName": "Hed_COP013",
+    "HowToGet": "Uroko",
     "Id": 13,
     "Order": 13.0,
     "Season": 5,
@@ -184,6 +197,7 @@
   {
     "GearClothesName": "Clt_COP014",
     "GearHeadName": "Hed_COP014",
+    "HowToGet": "Uroko",
     "Id": 14,
     "Order": 14.0,
     "Season": 5,
@@ -198,6 +212,7 @@
   {
     "GearClothesName": "Clt_COP015",
     "GearHeadName": "Hed_COP015",
+    "HowToGet": "Uroko",
     "Id": 15,
     "Order": 15.0,
     "Season": 7,
@@ -212,6 +227,7 @@
   {
     "GearClothesName": "Clt_COP016",
     "GearHeadName": "Hed_COP016",
+    "HowToGet": "Uroko",
     "Id": 16,
     "Order": 16.0,
     "Season": 7,
@@ -226,6 +242,7 @@
   {
     "GearClothesName": "Clt_COP017",
     "GearHeadName": "Hed_COP017",
+    "HowToGet": "Uroko",
     "Id": 17,
     "Order": 17.0,
     "Season": 7,
@@ -240,6 +257,7 @@
   {
     "GearClothesName": "Clt_COP018",
     "GearHeadName": "Hed_COP018",
+    "HowToGet": "Uroko",
     "Id": 18,
     "Order": 18.0,
     "Season": 8,
@@ -254,6 +272,7 @@
   {
     "GearClothesName": "Clt_COP019",
     "GearHeadName": "Hed_COP019",
+    "HowToGet": "Uroko",
     "Id": 19,
     "Order": 19.0,
     "Season": 8,
@@ -268,6 +287,7 @@
   {
     "GearClothesName": "Clt_COP020",
     "GearHeadName": "Hed_COP020",
+    "HowToGet": "Uroko",
     "Id": 20,
     "Order": 20.0,
     "Season": 8,
@@ -278,5 +298,20 @@
     },
     "UrokoUnlockLevel": 3,
     "__RowId": "COP020"
+  },
+  {
+    "GearClothesName": "Clt_COP021",
+    "GearHeadName": "Hed_COP021",
+    "HowToGet": "Other",
+    "Id": 21,
+    "Order": 21.0,
+    "Season": 9,
+    "UrokoPrice": {
+      "BronzeUrokoNum": 0,
+      "GoldUrokoNum": 0,
+      "SilverUrokoNum": 0
+    },
+    "UrokoUnlockLevel": 0,
+    "__RowId": "COP021"
   }
 ]

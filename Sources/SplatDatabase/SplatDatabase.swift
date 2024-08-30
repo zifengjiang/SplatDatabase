@@ -70,7 +70,16 @@ public class SplatDatabase {
     migrator.registerMigration("insertImageMapForVersion810") { db in
         try self.updateImageMap(db: db)
     }
+    
+    migrator.registerMigration("insertI18nForVersion900") { db in
+        try self.updateI18n(db: db)
+    }
+
+    migrator.registerMigration("insertImageMapForVersion900") { db in
+        try self.updateImageMap(db: db)
+    }
     return migrator
+    
     
     }
 
