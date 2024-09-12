@@ -80,6 +80,14 @@
     "__RowId": "Vss_Line03"
   },
   {
+    "DisplayOrder": 25,
+    "Id": 25,
+    "IsDisplayInStageList": false,
+    "Season": -1,
+    "TclSceneName": "",
+    "__RowId": "Vss_Manbou00"
+  },
+  {
     "DisplayOrder": 10,
     "Id": 14,
     "IsDisplayInStageList": true,
