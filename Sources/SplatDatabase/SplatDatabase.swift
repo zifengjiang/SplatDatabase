@@ -18,7 +18,7 @@ public class SplatDatabase {
         try migrator.migrate(dbQueue)
     }
 
-    /// test use
+        /// test use
     public init(path:String) {
         do {
             try createDatabase(path: path)
@@ -61,35 +61,45 @@ public class SplatDatabase {
                     CREATE INDEX idx_coop_stageId ON coop(stageId);
                 """)
         }
-        
-        
-    migrator.registerMigration("insertI18nForVersion810") { db in
-        try self.updateI18n(db: db)
-    }
 
-    migrator.registerMigration("insertImageMapForVersion810") { db in
-        try self.updateImageMap(db: db)
-    }
-    
-    migrator.registerMigration("insertI18nForVersion900") { db in
-        try self.updateI18n(db: db)
-    }
 
-    migrator.registerMigration("insertImageMapForVersion900") { db in
-        try self.updateImageMap(db: db)
-    }
-    
-    migrator.registerMigration("insertI18nForVersion910") { db in
-        try self.updateI18n(db: db)
-    }
+        migrator.registerMigration("insertI18nForVersion810") { db in
+            try self.updateI18n(db: db)
+        }
 
-    migrator.registerMigration("insertImageMapForVersion910") { db in
-        try self.updateImageMap(db: db)
-    }
-    return migrator
-    
-    
-    
+        migrator.registerMigration("insertImageMapForVersion810") { db in
+            try self.updateImageMap(db: db)
+        }
+
+        migrator.registerMigration("insertI18nForVersion900") { db in
+            try self.updateI18n(db: db)
+        }
+
+        migrator.registerMigration("insertImageMapForVersion900") { db in
+            try self.updateImageMap(db: db)
+        }
+
+        migrator.registerMigration("insertI18nForVersion910") { db in
+            try self.updateI18n(db: db)
+        }
+
+        migrator.registerMigration("insertImageMapForVersion910") { db in
+            try self.updateImageMap(db: db)
+        }
+
+        migrator.registerMigration("addIsBossColumnToCoopEnemyResult") { db in
+                // Check if the column already exists
+            let columns = try db.columns(in: "coopEnemyResult")
+            if !columns.contains(where: { $0.name == "isBoss" }) {
+                try db.alter(table: "coopEnemyResult") { t in
+                    t.add(column: "isBoss", .boolean).notNull().defaults(to: false)
+                }
+            }
+        }
+        return migrator
+
+
+
     }
 
 
@@ -253,6 +263,7 @@ public class SplatDatabase {
             t.column("teamDefeatCount", .text).notNull()
             t.column("defeatCount", .integer).notNull()
             t.column("popCount", .integer).notNull()
+            t.column("isBoss",.boolean).notNull().defaults(to: false)
 
             t.column("coopId", .integer).references("coop", column: "id")
         }

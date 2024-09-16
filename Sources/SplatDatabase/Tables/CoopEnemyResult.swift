@@ -7,6 +7,7 @@ public struct CoopEnemyResult:Codable, FetchableRecord, PersistableRecord{
     public var defeatCount:Int
     public var teamDefeatCount:Int
     public var popCount:Int
+    public var isBoss: Bool = false
     public var coopId:Int64?
     
     // MARK: - computed properties
@@ -20,6 +21,7 @@ public struct CoopEnemyResult:Codable, FetchableRecord, PersistableRecord{
         case teamDefeatCount
         case popCount
         case coopId
+        case isBoss
     }
 
     public init(json:JSON, coopId:Int64, db:Database){
@@ -36,6 +38,7 @@ public struct CoopEnemyResult:Codable, FetchableRecord, PersistableRecord{
         self.defeatCount = hasDefeated ? 1 : 0
         self.teamDefeatCount = hasDefeated ? 1 : 0
         self.popCount = 1
+        self.isBoss = true
     }
 }
 
