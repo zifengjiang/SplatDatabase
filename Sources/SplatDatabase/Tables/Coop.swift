@@ -188,6 +188,13 @@ extension SplatDatabase{
                     try CoopEnemyResult(json: element, coopId: coopId,db: db).insert(db)
                 }
 
+                /// insert Boss Result
+                if let bossResults = json["bossResults"].array{
+                    for (_,element) in bossResults.enumerated(){
+                        try CoopEnemyResult(json: element, coopId: coopId, hasDefeated: element["hasDefeatBoss"].boolValue, db: db).insert(db)
+                    }
+                }
+
         }
     
 
