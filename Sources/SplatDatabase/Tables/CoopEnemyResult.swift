@@ -32,7 +32,7 @@ public struct CoopEnemyResult:Codable, FetchableRecord, PersistableRecord{
 
     public init(json:JSON, coopId:Int64,hasDefeated:Bool, db:Database){
         self.coopId = coopId
-        self.enemyId = getImageId(for:json["id"].stringValue, db: db)
+        self.enemyId = getImageId(for:json["boss"]["id"].stringValue, db: db)
         self.defeatCount = hasDefeated ? 1 : 0
         self.teamDefeatCount = hasDefeated ? 1 : 0
         self.popCount = 1
