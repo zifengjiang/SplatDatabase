@@ -30,13 +30,13 @@ public struct Coop: Codable, FetchableRecord, PersistableRecord {
     public var smellMeter:Int?
     public var accountId:Int64
 
-    // MARK: - computed properties
+        // MARK: - computed properties
     public var suppliedWeapons: [String]? = nil
     public var bossName: String? = nil
     public var stageImage:String? = nil
     public var stageName: String? = nil
 
-    // MARK: - CodingKeys
+        // MARK: - CodingKeys
     enum CodingKeys: String, CodingKey {
         case id
         case sp3PrincipalId
@@ -145,58 +145,64 @@ extension SplatDatabase{
 
     public func insertCoop(json:JSON, db:Database) throws {
 
-                let userId = json["id"].stringValue.extractUserId()
-                let userCount = try Int.fetchOne(db, sql: "SELECT COUNT(*) FROM account WHERE sp3Id = ?", arguments: [userId])!
-                if userCount == 0{
-                    var account = Account()
-                    account.sp3Id = userId
-                    try account.insert(db)
-                }
-                    /// insert coop
-                let coop = Coop(json:json, db: db)
-                try coop.insert(db)
-                let coopId = db.lastInsertedRowID
-                    /// insert weapons
-                for (index,element) in json["weapons"].arrayValue.enumerated(){
-                    try Weapon(imageMapId: getImageId(hash:element["image"]["url"].stringValue.getImageHash(), db: db), order: index,coopId: coopId).insert(db)
-                }
-                    /// insert coopPlayerResult
-                try CoopPlayerResult(json: json["myResult"], order: 0, coopId: coopId,db: db).insert(db)
-                var coopPlayerResultId = db.lastInsertedRowID
-                for (index,element) in json["myResult"]["weapons"].arrayValue.enumerated(){
-                    try Weapon(imageMapId: getImageId(hash:element["image"]["url"].stringValue.getImageHash(), db: db), order: index,coopPlayerResultId: coopPlayerResultId).insert(db)
-                }
-                try Player(json: json["myResult"]["player"], coopPlayerResultId: coopPlayerResultId, db: db).insert(db)
-                for (index,element) in json["memberResults"].arrayValue.enumerated(){
-                    try CoopPlayerResult(json: element, order: index + 1, coopId: coopId,db: db).insert(db)
-                    coopPlayerResultId = db.lastInsertedRowID
-                    for (index,element) in element["weapons"].arrayValue.enumerated(){
-                        try Weapon(imageMapId: getImageId(hash:element["image"]["url"].stringValue.getImageHash(), db: db), order: index,coopPlayerResultId: coopPlayerResultId).insert(db)
-                    }
-                    try Player(json: element["player"], coopPlayerResultId: coopPlayerResultId, db: db).insert(db)
-                }
-                    /// insert coopWaveResult
-                for (index,element) in json["waveResults"].arrayValue.enumerated(){
-                    try CoopWaveResult(json: element,bossId: index == 3 ? json["bossResult"]["boss"]["id"].string : nil, coopId: coopId,db: db).insert(db)
-                    let coopWaveResultId = db.lastInsertedRowID
-                    for (index,element) in element["specialWeapons"].arrayValue.enumerated(){
-                        try Weapon(imageMapId: getImageId(hash:element["image"]["url"].stringValue.getImageHash(), db: db), order: index,coopWaveResultId: coopWaveResultId).insert(db)
-                    }
-                }
-                    /// insert coopEnemyResult
-                for (_,element) in json["enemyResults"].arrayValue.enumerated(){
-                    try CoopEnemyResult(json: element, coopId: coopId,db: db).insert(db)
-                }
-
-                /// insert Boss Result
-                if let bossResults = json["bossResults"].array{
-                    for (_,element) in bossResults.enumerated(){
-                        try CoopEnemyResult(json: element, coopId: coopId, hasDefeated: element["hasDefeatBoss"].boolValue, db: db).insert(db)
-                    }
-                }
-
+        let userId = json["id"].stringValue.extractUserId()
+        let userCount = try Int.fetchOne(db, sql: "SELECT COUNT(*) FROM account WHERE sp3Id = ?", arguments: [userId])!
+        if userCount == 0{
+            var account = Account()
+            account.sp3Id = userId
+            try account.insert(db)
         }
-    
+            /// insert coop
+        let coop = Coop(json:json, db: db)
+        try coop.insert(db)
+        let coopId = db.lastInsertedRowID
+            /// insert weapons
+        for (index,element) in json["weapons"].arrayValue.enumerated(){
+            try Weapon(imageMapId: getImageId(hash:element["image"]["url"].stringValue.getImageHash(), db: db), order: index,coopId: coopId).insert(db)
+        }
+            /// insert coopPlayerResult
+        try CoopPlayerResult(json: json["myResult"], order: 0, coopId: coopId,db: db).insert(db)
+        var coopPlayerResultId = db.lastInsertedRowID
+        for (index,element) in json["myResult"]["weapons"].arrayValue.enumerated(){
+            try Weapon(imageMapId: getImageId(hash:element["image"]["url"].stringValue.getImageHash(), db: db), order: index,coopPlayerResultId: coopPlayerResultId).insert(db)
+        }
+        try Player(json: json["myResult"]["player"], coopPlayerResultId: coopPlayerResultId, db: db).insert(db)
+        for (index,element) in json["memberResults"].arrayValue.enumerated(){
+            try CoopPlayerResult(json: element, order: index + 1, coopId: coopId,db: db).insert(db)
+            coopPlayerResultId = db.lastInsertedRowID
+            for (index,element) in element["weapons"].arrayValue.enumerated(){
+                try Weapon(imageMapId: getImageId(hash:element["image"]["url"].stringValue.getImageHash(), db: db), order: index,coopPlayerResultId: coopPlayerResultId).insert(db)
+            }
+            try Player(json: element["player"], coopPlayerResultId: coopPlayerResultId, db: db).insert(db)
+        }
+            /// insert coopWaveResult
+        for (index,element) in json["waveResults"].arrayValue.enumerated(){
+            try CoopWaveResult(json: element,bossId: index == 3 ? json["bossResult"]["boss"]["id"].string : nil, coopId: coopId,db: db).insert(db)
+            let coopWaveResultId = db.lastInsertedRowID
+            for (index,element) in element["specialWeapons"].arrayValue.enumerated(){
+                try Weapon(imageMapId: getImageId(hash:element["image"]["url"].stringValue.getImageHash(), db: db), order: index,coopWaveResultId: coopWaveResultId).insert(db)
+            }
+        }
+            /// insert coopEnemyResult
+        for (_,element) in json["enemyResults"].arrayValue.enumerated(){
+            try CoopEnemyResult(json: element, coopId: coopId,db: db).insert(db)
+        }
+
+            /// insert Boss Result
+        if let bossResults = json["bossResults"].array{
+            for (_,element) in bossResults.enumerated(){
+                try CoopEnemyResult(json: element, coopId: coopId, hasDefeated: element["hasDefeatBoss"].boolValue, db: db).insert(db)
+            }
+        }
+
+        if let hasDefeatBoss = json["bossResult"]["hasDefeatBoss"].bool{
+            if json["bossResult"]["boss"]["id"].stringValue.order != 30{
+                try CoopEnemyResult(json: json["bossResult"], coopId: coopId, hasDefeated: hasDefeatBoss, db: db)
+            }
+        }
+
+    }
+
 
     public func insertCoops(jsons:[JSON], checkExist:Bool = true) async throws {
         try await self.dbQueue.write { db in
@@ -249,5 +255,59 @@ extension SplatDatabase {
         }
         return count > 0
     }
+}
+
+extension SplatDatabase {
+    public func filterNotExistsCoop(ids: [String]) throws -> [String] {
+            // 提取所有需要的字段
+        let sp3PrincipalIds = ids.map { $0.getDetailUUID() }
+        let playedTimes = ids.map { $0.base64DecodedString.extractedDate! }
+        let sp3Ids = ids.map { $0.extractUserId() }
+
+            // 构建SQL查询语句
+        let sql = """
+                SELECT
+                sp3PrincipalId, playedTime, sp3Id
+                FROM
+                coop
+                JOIN account ON coop.accountId = account.id
+                WHERE
+                sp3PrincipalId IN (\(sp3PrincipalIds.map { _ in "?" }.joined(separator: ", ")))
+                AND playedTime IN (\(playedTimes.map { _ in "?" }.joined(separator: ", ")))
+                AND sp3Id IN (\(sp3Ids.map { _ in "?" }.joined(separator: ", ")))
+              """
+
+            // 将所有参数转换为DatabaseValueConvertible数组
+        let arguments: [DatabaseValueConvertible] = sp3PrincipalIds + playedTimes + sp3Ids
+
+        let existingRecords = try dbQueue.read { db in
+                // 执行查询，获取存在的记录
+            try Row.fetchAll(db, sql: sql, arguments: StatementArguments(arguments))
+        }
+
+
+            // 创建一个Set用于存储已存在的记录ID
+        var existingSet: Set<String> = []
+        for record in existingRecords {
+            let sp3PrincipalId: String = record["sp3PrincipalId"]
+            let playedTime: Date = record["playedTime"]
+            let sp3Id: String = record["sp3Id"]
+
+                // 重建原始ID
+            if let originalId = ids.first(where: {
+                $0.getDetailUUID() == sp3PrincipalId &&
+                $0.base64DecodedString.extractedDate! == playedTime &&
+                $0.extractUserId() == sp3Id
+            }) {
+                existingSet.insert(originalId)
+            }
+        }
+
+            // 计算不存在的ID
+        let notExistIds = ids.filter { !existingSet.contains($0) }
+
+        return notExistIds
+    }
+
 }
 

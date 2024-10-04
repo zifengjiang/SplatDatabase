@@ -355,7 +355,6 @@ public class SplatDatabase {
             t.column("teamDefeatCount", .text).notNull()
             t.column("defeatCount", .integer).notNull()
             t.column("popCount", .integer).notNull()
-            t.column("isBoss",.boolean).notNull().defaults(to: false)
 
             t.column("coopId", .integer).references("coop", column: "id")
         }
