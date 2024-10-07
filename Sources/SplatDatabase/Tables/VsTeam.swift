@@ -22,6 +22,26 @@ public struct VsTeam:Codable, FetchableRecord, PersistableRecord{
 
     public var battleId:Int64?
 
+    // MARK: computed
+    public var players:[Player] = []
+
+    enum CodingKeys: String, CodingKey {
+        case id
+        case order
+        case color
+        case judgement
+        case paintPoint
+        case paintRatio
+        case score
+        case noroshi
+        case tricolorRole
+        case festTeamName
+        case festUniformName
+        case festUniformBonusRate
+        case festStreakWinCount
+        case battleId
+    }
+
     public init(json:JSON, battleId:Int64){
         self.battleId = battleId
         self.order = json["order"].intValue
@@ -38,5 +58,19 @@ public struct VsTeam:Codable, FetchableRecord, PersistableRecord{
         self.festUniformName = json["festUniformName"].string
         self.festUniformBonusRate = json["festUniformBonusRate"].double
         self.festStreakWinCount = json["festStreakWinCount"].int
+    }
+}
+
+extension VsTeam: PreComputable{
+    static public func create(from db: Database, identifier: (Int)) throws -> [VsTeam] {
+        let battleId = identifier
+        var rows = try VsTeam.fetchAll(db,sql: "SELECT * FROM vsTeam WHERE battleId = \(battleId)")
+
+        for i in rows.indices{
+            let players:[Player] = try! Player.create(from: db, identifier: (rows[i].id!, "vsTeamId"))
+            rows[i].players = players
+        }
+
+        return rows
     }
 }
