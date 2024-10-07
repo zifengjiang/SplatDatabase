@@ -38,6 +38,7 @@ public struct Battle:Codable, FetchableRecord, PersistableRecord{
 
     // MARK: Computed
     public var teams:[VsTeam] = []
+    public var stage:ImageMap? = nil
 
     enum CodingKeys: String, CodingKey {
         case sp3PrincipalId, mode, rule, stageId, playedTime, duration, judgement, knockout, udemae, preDetailId
@@ -129,6 +130,9 @@ extension Battle:PreComputable{
         let id = identifier
         var row = try Battle.fetchOne(db, key: id)
         row?.teams =  try VsTeam.create(from: db, identifier: id)
+        if let stageId = row?.stageId{
+            row?.stage = try ImageMap.fetchOne(db, key: stageId)
+        }
         return row
     }
 }
