@@ -132,11 +132,11 @@ public struct Player: Codable, FetchableRecord, PersistableRecord {
 
 extension Player{
     public struct Weapon: Codable {
-        let mainWeapon: ImageMap
-        let specialWeapon: ImageMap
-        let subWeapon: ImageMap
+        public let mainWeapon: ImageMap
+        public let specialWeapon: ImageMap
+        public let subWeapon: ImageMap
 
-        init(with weapon: PackableNumbers, db: Database) {
+        public init(with weapon: PackableNumbers, db: Database) {
             let mainWeaponId = weapon[0]
             let specialWeaponId = weapon[1]
             let subWeaponId = weapon[2]
