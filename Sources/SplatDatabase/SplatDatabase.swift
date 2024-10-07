@@ -105,6 +105,56 @@ public class SplatDatabase {
                 }
             }
         }
+
+        migrator.registerMigration("removeForeignKeyConstraint") { db in
+            try db.create(table: "new_player",ifNotExists: true) { t in
+                t.autoIncrementedPrimaryKey("id")
+                t.column("isCoop",.boolean).notNull() // true for coop, false for battle
+
+                    /// Common Attributes
+                t.column("sp3PrincipalId", .text).notNull()
+                t.column("byname", .text).notNull()
+                t.column("name", .text).notNull()
+                t.column("nameId", .text).notNull()
+                t.column("species", .boolean).notNull() // true for octoling, false for inkling
+                t.column("nameplate", .integer).notNull()
+                t.column("nameplateTextColor", .integer).notNull()
+
+                    /// Coop Attributes
+                t.column("uniformId", .integer).references("imageMap",column: "id")
+
+                    /// Battle Attributes
+                t.column("paint", .integer)
+                t.column("weapon", .integer)
+                t.column("headGear", .integer)
+                t.column("clothingGear", .integer)
+                t.column("shoesGear", .integer)
+                t.column("crown", .boolean)
+                t.column("festDragonCert", .text)
+                t.column("festGrade", .text)
+                t.column("isMyself", .boolean)
+
+                    /// Battle Result Attributes
+                t.column("kill", .integer)
+                t.column("death", .integer)
+                t.column("assist", .integer)
+                t.column("special", .integer)
+                t.column("noroshiTry", .integer)
+
+                t.column("vsTeamId", .integer).references("vsTeam", column: "id")
+                t.column("coopPlayerResultId", .integer).references("coopPlayerResult", column: "id")
+            }
+
+            try db.execute(sql: """
+                    INSERT INTO new_player
+                    SELECT id,isCoop,sp3PrincipalId,byname,name,nameId,species,nameplate,nameplateTextColor,uniformId,paint,weapon,headGear,clothingGear,shoesGear,crown,festDragonCert,festGrade,isMyself,kill,death,assist,special,noroshiTry,vsTeamId,coopPlayerResultId
+                    FROM player;
+                """)
+            try db.drop(table: "player")
+            try db.rename(table: "new_player", to: "player")
+
+        }
+
         return migrator
 
 
@@ -295,7 +345,7 @@ public class SplatDatabase {
 
                 /// Battle Attributes
             t.column("paint", .integer)
-            t.column("weaponId", .integer).references("imageMap", column: "id")
+            t.column("weapon", .integer)
             t.column("headGear", .integer)
             t.column("clothingGear", .integer)
             t.column("shoesGear", .integer)
