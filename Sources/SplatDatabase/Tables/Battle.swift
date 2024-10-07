@@ -125,16 +125,9 @@ extension SplatDatabase {
 
     public func deleteAllBattles() throws {
         try dbQueue.write { db in
-            try db.execute(literal: """
-                    -- 清空 player 表中的所有记录
-                    DELETE FROM player WHERE vsTeamId IS NOT NULL;
-                    
-                    -- 清空 vsTeam 表中的所有记录
-                    DELETE FROM vsTeam;
-                    
-                    -- 清空 battle 表中的所有记录
-                    DELETE FROM battle;
-                    """)
+            try db.execute(literal: "DELETE FROM player WHERE vsTeamId IS NOT NULL;")
+            try db.execute(literal: "DELETE FROM vsTeam;")
+            try db.execute(literal: "DELETE FROM battle;")
         }
     }
 }
