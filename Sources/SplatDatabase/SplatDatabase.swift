@@ -96,6 +96,15 @@ public class SplatDatabase {
                 }
             }
         }
+
+        migrator.registerMigration("alterPlayerTableColumnWeaponId2Weapon") { db in
+            let columns = try db.columns(in: "player")
+            if columns.contains(where: { $0.name == "weaponId" }) {
+                try db.alter(table: "player") { t in
+                    t.rename(column: "weaponId", to: "weapon")
+                }
+            }
+        }
         return migrator
 
 
