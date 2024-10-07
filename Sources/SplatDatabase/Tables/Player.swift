@@ -22,7 +22,7 @@ public struct Player: Codable, FetchableRecord, PersistableRecord {
 
     // MARK: - Battle Attributes
     public var paint: Int?
-    public var weaponId: UInt16?
+    public var weapon: PackableNumbers?
     public var headGear: PackableNumbers
     public var clothingGear: PackableNumbers
     public var shoesGear: PackableNumbers
@@ -58,7 +58,7 @@ public struct Player: Codable, FetchableRecord, PersistableRecord {
         case nameplateTextColor
         case uniformId
         case paint
-        case weaponId
+        case weapon
         case headGear
         case clothingGear
         case shoesGear
@@ -81,7 +81,7 @@ public struct Player: Codable, FetchableRecord, PersistableRecord {
     public var _headGear:Gear? = nil
     public var _clothingGear:Gear? = nil
     public var _shoesGear:Gear? = nil
-    public var weapon:ImageMap? = nil
+    public var _weapon: Weapon? = nil
 
     // MARK: - init from json
     public init(json: JSON, vsTeamId: Int64? = nil, coopPlayerResultId: Int64? = nil, db:Database) {
@@ -107,7 +107,10 @@ public struct Player: Codable, FetchableRecord, PersistableRecord {
 
         self.paint = json["paint"].int
         if vsTeamId != nil{
-            self.weaponId = getImageId(for: json["weapon"]["id"].string,db: db)
+            let weaponId = getImageId(for: json["weapon"]["id"].string,db: db)
+            let weaponSpecial = getImageId(for: json["weapon"]["specialWeapon"]["id"].string,db: db)
+            let weaponSub = getImageId(for: json["weapon"]["subWeapon"]["id"].string,db: db)
+            self.weapon = PackableNumbers([weaponId, weaponSpecial, weaponSub])
         }
         self.headGear = json["headGear"].dictionary?.toGearPackableNumbers(db: db) ?? PackableNumbers([0])
         self.clothingGear = json["clothingGear"].dictionary?.toGearPackableNumbers(db: db) ?? PackableNumbers([0])
@@ -127,6 +130,24 @@ public struct Player: Codable, FetchableRecord, PersistableRecord {
     }
 }
 
+extension Player{
+    public struct Weapon: Codable {
+        let mainWeapon: ImageMap
+        let specialWeapon: ImageMap
+        let subWeapon: ImageMap
+
+        init(with weapon: PackableNumbers, db: Database) {
+            let mainWeaponId = weapon[0]
+            let specialWeaponId = weapon[1]
+            let subWeaponId = weapon[2]
+
+            self.mainWeapon = try! ImageMap.fetchOne(db, key: mainWeaponId)!
+            self.specialWeapon = try! ImageMap.fetchOne(db, key: specialWeaponId)!
+            self.subWeapon = try! ImageMap.fetchOne(db, key: subWeaponId)!
+        }
+    }
+}
+
 extension Player: PreComputable {
     public static func create(from db: Database, identifier: (Int64, String)) throws -> [Player] {
         let (id, column) = identifier
@@ -142,7 +163,9 @@ extension Player: PreComputable {
                 rows[index]._headGear  = .init(gear: rows[index].headGear, db: db)
                 rows[index]._clothingGear  = .init(gear: rows[index].clothingGear, db: db)
                 rows[index]._shoesGear  = .init(gear: rows[index].shoesGear, db: db)
-                rows[index].weapon = try ImageMap.fetchOne(db, key: rows[index].weaponId)
+                if let weapon = rows[index].weapon{
+                    rows[index]._weapon = .init(with: weapon, db: db)
+                }
             }
         }
         return rows
@@ -161,7 +184,9 @@ extension Player: PreComputable {
                 row._headGear  = .init(gear: row.headGear, db: db)
                 row._clothingGear  = .init(gear: row.clothingGear, db: db)
                 row._shoesGear  = .init(gear: row.shoesGear, db: db)
-                row.weapon = try ImageMap.fetchOne(db, key: row.weaponId)
+                if let weapon = row.weapon{
+                    row._weapon = .init(with: weapon, db: db)
+                }
             }
             return row
         }
