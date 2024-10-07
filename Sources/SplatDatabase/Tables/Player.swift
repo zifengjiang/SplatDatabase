@@ -3,12 +3,12 @@ import SwiftUI
 import GRDB
 import SwiftyJSON
 
-    /// struct for player table
+/// struct for player table
 public struct Player: Codable, FetchableRecord, PersistableRecord {
     public var id: Int64?
     public var isCoop: Bool
 
-        // Common Attributes
+    // Common Attributes
     public var sp3PrincipalId: String
     public var byname: String
     public var name: String
@@ -17,10 +17,10 @@ public struct Player: Codable, FetchableRecord, PersistableRecord {
     public var nameplate: PackableNumbers
     public var nameplateTextColor: PackableNumbers
 
-        // MARK: - Coop Attributes
+    // MARK: - Coop Attributes
     public var uniformId: UInt16?
 
-        // MARK: - Battle Attributes
+    // MARK: - Battle Attributes
     public var paint: Int?
     public var weaponId: UInt16?
     public var headGear: PackableNumbers
@@ -31,21 +31,21 @@ public struct Player: Codable, FetchableRecord, PersistableRecord {
     public var festGrade: String?
     public var isMyself: Bool?
 
-        // MARK: - Battle Result Attributes
+    // MARK: - Battle Result Attributes
     public var kill: Int?
     public var death: Int?
     public var assist: Int?
     public var special: Int?
     public var noroshiTry: Int?
 
-        // MARK: - References to vsTeam
+    // MARK: - References to vsTeam
     public var vsTeamId: Int64?
     public var coopPlayerResultId: Int64?
 
-        // MARK: - Database table name
+    // MARK: - Database table name
     public static let databaseTableName = "player"
 
-        // MARK: - CodingKeys
+    // MARK: - CodingKeys
     enum CodingKeys: String, CodingKey {
         case id
         case isCoop
@@ -75,14 +75,15 @@ public struct Player: Codable, FetchableRecord, PersistableRecord {
         case coopPlayerResultId
     }
 
-        // MARK: - computed properties
+    // MARK: - computed properties
     public var uniformName: String? = nil
     public var _nameplate: Nameplate? = nil
     public var _headGear:Gear? = nil
     public var _clothingGear:Gear? = nil
     public var _shoesGear:Gear? = nil
+    public var weapon:ImageMap? = nil
 
-        // MARK: - init from json
+    // MARK: - init from json
     public init(json: JSON, vsTeamId: Int64? = nil, coopPlayerResultId: Int64? = nil, db:Database) {
         self.coopPlayerResultId = coopPlayerResultId
         self.vsTeamId = vsTeamId
@@ -141,6 +142,7 @@ extension Player: PreComputable {
                 rows[index]._headGear  = .init(gear: rows[index].headGear, db: db)
                 rows[index]._clothingGear  = .init(gear: rows[index].clothingGear, db: db)
                 rows[index]._shoesGear  = .init(gear: rows[index].shoesGear, db: db)
+                rows[index].weapon = try ImageMap.fetchOne(db, key: rows[index].weaponId)
             }
         }
         return rows
@@ -159,6 +161,7 @@ extension Player: PreComputable {
                 row._headGear  = .init(gear: row.headGear, db: db)
                 row._clothingGear  = .init(gear: row.clothingGear, db: db)
                 row._shoesGear  = .init(gear: row.shoesGear, db: db)
+                row.weapon = try ImageMap.fetchOne(db, key: row.weaponId)
             }
             return row
         }

@@ -64,7 +64,7 @@ public struct VsTeam:Codable, FetchableRecord, PersistableRecord{
 extension VsTeam: PreComputable{
     static public func create(from db: Database, identifier: (Int)) throws -> [VsTeam] {
         let battleId = identifier
-        var rows = try VsTeam.fetchAll(db,sql: "SELECT * FROM vsTeam WHERE battleId = \(battleId)")
+        var rows = try VsTeam.fetchAll(db,sql: "SELECT * FROM vsTeam WHERE battleId = \(battleId) ORDER BY `order`;")
 
         for i in rows.indices{
             let players:[Player] = try! Player.create(from: db, identifier: (rows[i].id!, "vsTeamId"))
