@@ -78,7 +78,7 @@ extension PackableNumbers: DatabaseValueConvertible {
 }
 
 extension PackableNumbers {
-    func toColor() -> Color {
+    public func toColor() -> Color {
         let r = Double(self[0]) / 255.0
         let g = Double(self[1]) / 255.0
         let b = Double(self[2]) / 255.0
