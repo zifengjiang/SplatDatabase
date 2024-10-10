@@ -154,6 +154,10 @@ public class SplatDatabase {
             try db.rename(table: "new_player", to: "player")
 
         }
+        // CREATE INDEX idx_player_coopPlayerResultId ON player(coopPlayerResultId)
+        migrator.registerMigration("createIdx_player_coopPlayerResultId") { db in
+            try db.execute(sql: "CREATE INDEX idx_player_coopPlayerResultId ON player(coopPlayerResultId);")
+        }
 
         return migrator
 
