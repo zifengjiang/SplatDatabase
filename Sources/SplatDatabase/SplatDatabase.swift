@@ -447,7 +447,7 @@ extension SplatDatabase {
                 sp3PrincipalId, playedTime, sp3Id
                 FROM
                 \(kind)
-                JOIN account ON coop.accountId = account.id
+                JOIN account ON \(kind).accountId = account.id
                 WHERE
                 sp3PrincipalId IN (\(sp3PrincipalIds.map { _ in "?" }.joined(separator: ", ")))
                 AND playedTime IN (\(playedTimes.map { _ in "?" }.joined(separator: ", ")))
