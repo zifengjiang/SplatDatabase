@@ -144,3 +144,4 @@ extension Battle:PreComputable{
         return row
     }
 }
+
