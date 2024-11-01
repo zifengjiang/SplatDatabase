@@ -97,6 +97,7 @@ extension SplatDatabase {
     }
 
     public func insertBattle(json: JSON, db:Database) throws {
+        
         let userId = json["id"].stringValue.extractUserId()
         let userCount = try Int.fetchOne(db, sql: "SELECT COUNT(*) FROM account WHERE sp3Id = ?", arguments: [userId])!
         if userCount == 0{
