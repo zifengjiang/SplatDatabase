@@ -2,7 +2,7 @@ import requests
 import json
 import re
 
-current_version = 910
+current_version = 920
 
 BASE_URL = "https://raw.githubusercontent.com/Leanny/splat3/main/data/mush/"
 
