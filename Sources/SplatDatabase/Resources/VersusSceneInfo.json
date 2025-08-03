@@ -24,6 +24,14 @@
     "__RowId": "Vss_Carousel"
   },
   {
+    "DisplayOrder": 26,
+    "Id": 26,
+    "IsDisplayInStageList": true,
+    "Season": -1,
+    "TclSceneName": "",
+    "__RowId": "Vss_Crank02"
+  },
+  {
     "DisplayOrder": 21,
     "Id": 21,
     "IsDisplayInStageList": true,

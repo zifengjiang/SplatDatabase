@@ -185,7 +185,16 @@ public class SplatDatabase {
     migrator.registerMigration("insertImageMapForVersion920") { db in
         try self.updateImageMap(db: db)
     }
+    
+    migrator.registerMigration("insertI18nForVersion1000") { db in
+        try self.updateI18n(db: db)
+    }
+
+    migrator.registerMigration("insertImageMapForVersion1000") { db in
+        try self.updateImageMap(db: db)
+    }
     return migrator
+    
     
 
 
