@@ -160,7 +160,7 @@ public class SplatDatabase {
         }
 
         migrator.registerMigration("fixTriumvirateIssue") { db in
-            try I18n(key: "Q29vcEVuZW15LTMw", translations: ["zhCN": "头目联合", "zhTW": "頭目聯合", "en": "Triumvirate", "ja": "トリアムバレイト", "ko": "트리엄버레이트", "ru": "Триумвирейт", "fr": "Triumvirat", "de": "Triumvirat", "es": "Triunvirato", "it": "Triumvirato", "nl": "Triumviraat"]).insert(db)
+            try I18n(key: "Q29vcEVuZW15LTMw", translations: ["zhCN": "头目联合", "zhTW": "頭目聯合", "en": "Triumvirate", "ja": "トリアムバレイト", "ko": "트리엄버레이트", "ru": "Триумвирейт", "fr": "Triumvirat", "de": "Triumvirat", "es": "Triunvirato", "it": "Triumvirato", "nl": "Triumviraat"]).insert(db, onConflict: .ignore)
             // Update
             try db.execute(sql: """
                 UPDATE coopWaveResult
@@ -254,7 +254,7 @@ public class SplatDatabase {
             t.column("nl", .text) // 荷兰文
         }
 
-        try I18n(key: "Q29vcEVuZW15LTMw", translations: ["zhCN": "头目联合", "zhTW": "頭目聯合", "en": "Triumvirate", "ja": "トリアムバレイト", "ko": "트리엄버레이트", "ru": "Триумвирейт", "fr": "Triumvirat", "de": "Triumvirat", "es": "Triunvirato", "it": "Triumvirato", "nl": "Triumviraat"]).insert(db)
+        try I18n(key: "Q29vcEVuZW15LTMw", translations: ["zhCN": "头目联合", "zhTW": "頭目聯合", "en": "Triumvirate", "ja": "トリアムバレイト", "ko": "트리엄버레이트", "ru": "Триумвирейт", "fr": "Triumvirat", "de": "Triumvirat", "es": "Triunvirato", "it": "Triumvirato", "nl": "Triumviraat"]).insert(db, onConflict: .ignore)
 
         try db.create(table: "coop",ifNotExists: true) { t in
             t.autoIncrementedPrimaryKey("id")
