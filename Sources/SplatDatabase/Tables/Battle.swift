@@ -124,6 +124,17 @@ extension SplatDatabase {
         }
     }
 
+    public func insertBattles(jsons: [JSON], checkExist: Bool = true) async throws {
+        try await self.dbQueue.write { db in
+            for json in jsons{
+                if try checkExist && self.isBattleExist(id: json["id"].stringValue,db: db){
+                    continue
+                }
+                try self.insertBattle(json: json, db: db)
+            }
+        }
+    }
+
     public func deleteAllBattles() throws {
         try dbQueue.write { db in
             try db.execute(literal: "DELETE FROM player WHERE vsTeamId IS NOT NULL;")
