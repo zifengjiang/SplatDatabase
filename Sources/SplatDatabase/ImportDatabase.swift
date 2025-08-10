@@ -192,6 +192,9 @@ extension SplatDatabase {
     public func importFromDatabaseWithConstraints(sourceDbPath: String, progress: ((Double) -> Void)? = nil, preserveIds: Bool = false) throws {
         let sourceDb = try DatabasePool(path: sourceDbPath)
         
+        // 存储ID映射关系（旧ID -> 新ID）
+        var idMappings: [String: [Int: Int]] = [:]
+        
         // 定义表的导入顺序（考虑外键约束）
         let tableOrder = [
             "account",      // 基础表，无外键依赖
@@ -212,7 +215,7 @@ extension SplatDatabase {
         let progressPerTable = 1.0 / Double(tableOrder.count)
         
         for (index, tableName) in tableOrder.enumerated() {
-            try importTableWithConstraints(tableName: tableName, from: sourceDb, preserveIds: preserveIds)
+            try importTableWithConstraints(tableName: tableName, from: sourceDb, preserveIds: preserveIds, idMappings: &idMappings)
             
             // 更新进度
             totalProgress = Double(index + 1) * progressPerTable
@@ -225,7 +228,8 @@ extension SplatDatabase {
     ///   - tableName: 表名
     ///   - sourceDb: 源数据库
     ///   - preserveIds: 是否保留原始ID
-    private func importTableWithConstraints(tableName: String, from sourceDb: DatabasePool, preserveIds: Bool) throws {
+    ///   - idMappings: ID映射关系（旧ID -> 新ID）
+    private func importTableWithConstraints(tableName: String, from sourceDb: DatabasePool, preserveIds: Bool, idMappings: inout [String: [Int: Int]]) throws {
         // 检查目标数据库中是否存在该表
         let targetTableExists = try dbQueue.read { db in
             try db.tableExists(tableName)
@@ -293,18 +297,76 @@ extension SplatDatabase {
                         row[columnName]
                     }
                     
+                    // 记录原始ID（如果存在）
+                    var originalId: Int? = nil
+                    if let _ = columnNames.firstIndex(of: "id"), let idValue = row["id"] as? Int {
+                        originalId = idValue
+                    }
+                    
                     // 如果不保留ID且是主键列，则跳过ID值（让数据库自动生成）
                     if !preserveIds, let primaryKeyIndex = columnNames.firstIndex(of: "id") {
                         values[primaryKeyIndex] = nil
                     }
                     
+                    // 更新外键引用
+                    if !preserveIds {
+                        let updatedValues = updateForeignKeyReferences(values: values, columnNames: columnNames, tableName: tableName, idMappings: idMappings)
+                        values = updatedValues
+                    }
+                    
                     // 执行插入
                     try targetDb.execute(sql: insertSQL, arguments: StatementArguments(values))
+                    
+                    // 记录新ID映射（如果生成了新ID）
+                    if !preserveIds, let originalId = originalId {
+                        let newId = targetDb.lastInsertedRowID
+                        if idMappings[tableName] == nil {
+                            idMappings[tableName] = [:]
+                        }
+                        idMappings[tableName]?[originalId] = Int(newId)
+                    }
                 }
             }
         }
         
         print("成功导入表 '\(tableName)' 的数据")
+    }
+    
+    /// 更新外键引用
+    /// - Parameters:
+    ///   - values: 列值数组
+    ///   - columnNames: 列名数组
+    ///   - tableName: 表名
+    ///   - idMappings: ID映射关系
+    /// - Returns: 更新后的列值数组
+    private func updateForeignKeyReferences(values: [DatabaseValueConvertible?], columnNames: [String], tableName: String, idMappings: [String: [Int: Int]]) -> [DatabaseValueConvertible?] {
+        var updatedValues = values
+        
+        // 定义外键映射关系
+        let foreignKeyMappings: [String: [String: String]] = [
+            "coop": ["accountId": "account", "stageId": "imageMap", "boss": "imageMap"],
+            "battle": ["accountId": "account", "stageId": "imageMap"],
+            "vsTeam": ["battleId": "battle"],
+            "coopPlayerResult": ["coopId": "coop"],
+            "coopWaveResult": ["coopId": "coop"],
+            "coopEnemyResult": ["coopId": "coop", "enemyId": "imageMap"],
+            "weapon": ["coopId": "coop", "coopPlayerResultId": "coopPlayerResult", "coopWaveResultId": "coopWaveResult", "imageMapId": "imageMap"],
+            "player": ["vsTeamId": "vsTeam", "coopPlayerResultId": "coopPlayerResult"]
+        ]
+        
+        // 获取当前表的外键映射
+        if let tableForeignKeys = foreignKeyMappings[tableName] {
+            for (columnName, referencedTable) in tableForeignKeys {
+                if let columnIndex = columnNames.firstIndex(of: columnName),
+                   let oldId = values[columnIndex] as? Int,
+                   let tableMappings = idMappings[referencedTable],
+                   let newId = tableMappings[oldId] {
+                    updatedValues[columnIndex] = newId
+                }
+            }
+        }
+        
+        return updatedValues
     }
 }
 
@@ -333,4 +395,5 @@ extension SplatDatabase {
  - 提供实时导入进度
  - 支持忽略重复记录
  - 可选择保留原始ID或使用新的自增ID
+ - 自动处理外键引用更新
  */
