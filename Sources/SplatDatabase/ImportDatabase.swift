@@ -263,11 +263,21 @@ extension SplatDatabase {
         let columnNamesString = columnNames.joined(separator: ", ")
         let placeholders = columnNames.map { _ in "?" }.joined(separator: ", ")
         
-        // 构建INSERT语句
-        let insertSQL = """
-            INSERT INTO \(tableName) (\(columnNamesString))
-            VALUES (\(placeholders))
-        """
+        // 为特定表构建特殊的INSERT语句
+        let insertSQL: String
+        if ["account", "i18n", "imageMap", "schedule"].contains(tableName) {
+            // 对于有唯一约束的表，使用INSERT OR REPLACE来处理唯一约束冲突
+            insertSQL = """
+                INSERT OR REPLACE INTO \(tableName) (\(columnNamesString))
+                VALUES (\(placeholders))
+            """
+        } else {
+            // 对于其他表，使用普通的INSERT
+            insertSQL = """
+                INSERT INTO \(tableName) (\(columnNamesString))
+                VALUES (\(placeholders))
+            """
+        }
         
         // 构建SELECT语句
         let selectSQL = "SELECT \(columnNamesString) FROM \(tableName)"
