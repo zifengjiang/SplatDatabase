@@ -98,6 +98,85 @@ class Splat3DatabaseTests: XCTestCase {
             print(progress)
         }
     }
+    
+    func testImportDatabase() async throws {
+        // 创建一个临时的源数据库用于测试
+        let tempSourceDbPath = NSTemporaryDirectory() + "test_source_db.sqlite"
+        let sourceDb = try DatabasePool(path: tempSourceDbPath)
+        
+        // 在源数据库中创建一些测试数据
+        try sourceDb.write { db in
+            try db.create(table: "account", ifNotExists: true) { t in
+                t.autoIncrementedPrimaryKey("id")
+                t.column("sp3Id", .text).unique()
+                t.column("name", .text)
+            }
+            
+            try db.execute(sql: "INSERT INTO account (sp3Id, name) VALUES (?, ?)", arguments: ["test123", "Test User"])
+        }
+        
+        // 测试导入功能
+        try dbManager.importFromDatabase(sourceDbPath: tempSourceDbPath) { progress in
+            print("导入进度: \(progress)")
+        }
+        
+        // 验证数据是否成功导入
+        let accounts = try await dbManager.dbQueue.read { db in
+            try Account.fetchAll(db)
+        }
+        
+        // 清理临时文件
+        try FileManager.default.removeItem(atPath: tempSourceDbPath)
+        
+        // 验证至少有一个账户被导入
+        XCTAssertGreaterThan(accounts.count, 0)
+    }
+    
+    func testImportDatabaseWithConstraints() async throws {
+        // 创建一个临时的源数据库用于测试
+        let tempSourceDbPath = NSTemporaryDirectory() + "test_source_db_constraints.sqlite"
+        let sourceDb = try DatabasePool(path: tempSourceDbPath)
+        
+        // 在源数据库中创建一些测试数据
+        try sourceDb.write { db in
+            try db.create(table: "account", ifNotExists: true) { t in
+                t.autoIncrementedPrimaryKey("id")
+                t.column("sp3Id", .text).unique()
+                t.column("name", .text)
+            }
+            
+            try db.create(table: "imageMap", ifNotExists: true) { t in
+                t.autoIncrementedPrimaryKey("id")
+                t.column("nameId", .text).notNull().unique()
+                t.column("hash", .text).notNull()
+                t.column("name", .text).notNull()
+            }
+            
+            try db.execute(sql: "INSERT INTO account (sp3Id, name) VALUES (?, ?)", arguments: ["test456", "Test User 2"])
+            try db.execute(sql: "INSERT INTO imageMap (nameId, hash, name) VALUES (?, ?, ?)", arguments: ["test_image", "hash123", "Test Image"])
+        }
+        
+        // 测试导入功能（带约束处理）
+        try dbManager.importFromDatabaseWithConstraints(sourceDbPath: tempSourceDbPath) { progress in
+            print("导入进度（带约束）: \(progress)")
+        }
+        
+        // 验证数据是否成功导入
+        let accounts = try await dbManager.dbQueue.read { db in
+            try Account.fetchAll(db)
+        }
+        
+        let imageMaps = try await dbManager.dbQueue.read { db in
+            try ImageMap.fetchAll(db)
+        }
+        
+        // 清理临时文件
+        try FileManager.default.removeItem(atPath: tempSourceDbPath)
+        
+        // 验证数据被导入
+        XCTAssertGreaterThan(accounts.count, 0)
+        XCTAssertGreaterThan(imageMaps.count, 0)
+    }
 
     func testFormatByName() async {
         let byname = "5-Year-Planning Client"

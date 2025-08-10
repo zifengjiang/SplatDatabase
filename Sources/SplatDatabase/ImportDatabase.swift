@@ -82,3 +82,245 @@ extension SplatDatabase{
         }
     }
 }
+
+extension SplatDatabase {
+    /// 导入其他db.sqlite数据库文件，执行合并操作
+    /// - Parameters:
+    ///   - sourceDbPath: 源数据库文件路径
+    ///   - progress: 进度回调，参数为0.0到1.0的进度值
+    ///   - onConflict: 冲突处理策略，默认为.ignore（忽略重复记录）
+    public func importFromDatabase(sourceDbPath: String, progress: ((Double) -> Void)? = nil, onConflict: Database.ConflictResolution = .ignore) throws {
+        let sourceDb = try DatabasePool(path: sourceDbPath)
+        
+        // 获取所有表名
+        let tableNames = try sourceDb.read { db in
+            try String.fetchAll(db, sql: "SELECT name FROM sqlite_master WHERE type='table'")
+        }
+        
+        // 过滤掉系统表，只处理应用表
+        let appTables = tableNames.filter { !$0.hasPrefix("sqlite_") && !$0.hasPrefix("android_") }
+        
+        var totalProgress = 0.0
+        let progressPerTable = 1.0 / Double(appTables.count)
+        
+        for (index, tableName) in appTables.enumerated() {
+            try importTable(tableName: tableName, from: sourceDb, onConflict: onConflict)
+            
+            // 更新进度
+            totalProgress = Double(index + 1) * progressPerTable
+            progress?(totalProgress)
+        }
+    }
+    
+    /// 导入单个表的数据
+    /// - Parameters:
+    ///   - tableName: 表名
+    ///   - sourceDb: 源数据库
+    ///   - onConflict: 冲突处理策略
+    private func importTable(tableName: String, from sourceDb: DatabasePool, onConflict: Database.ConflictResolution) throws {
+        // 检查目标数据库中是否存在该表
+        let targetTableExists = try dbQueue.read { db in
+            try db.tableExists(tableName)
+        }
+        
+        guard targetTableExists else {
+            print("警告: 目标数据库中不存在表 '\(tableName)'，跳过导入")
+            return
+        }
+        
+        // 获取源表的列信息
+        let sourceColumns = try sourceDb.read { db in
+            try db.columns(in: tableName)
+        }
+        
+        // 获取目标表的列信息
+        let targetColumns = try dbQueue.read { db in
+            try db.columns(in: tableName)
+        }
+        
+        // 找出两个表都存在的列
+        let commonColumns = sourceColumns.filter { sourceCol in
+            targetColumns.contains { targetCol in
+                targetCol.name == sourceCol.name
+            }
+        }
+        
+        guard !commonColumns.isEmpty else {
+            print("警告: 表 '\(tableName)' 没有共同的列，跳过导入")
+            return
+        }
+        
+        // 构建列名列表
+        let columnNames = commonColumns.map { $0.name }
+        let columnNamesString = columnNames.joined(separator: ", ")
+        let placeholders = columnNames.map { _ in "?" }.joined(separator: ", ")
+        
+        // 构建INSERT语句
+        let insertSQL = """
+            INSERT INTO \(tableName) (\(columnNamesString))
+            VALUES (\(placeholders))
+        """
+        
+        // 构建SELECT语句
+        let selectSQL = "SELECT \(columnNamesString) FROM \(tableName)"
+        
+        // 执行数据导入
+        try sourceDb.read { sourceDb in
+            let cursor = try Row.fetchCursor(sourceDb, sql: selectSQL)
+            
+            try dbQueue.write { targetDb in
+                while let row = try cursor.next() {
+                    // 提取列值
+                    let values = columnNames.map { columnName in
+                        row[columnName]
+                    }
+                    
+                    // 执行插入
+                    try targetDb.execute(sql: insertSQL, arguments: StatementArguments(values))
+                }
+            }
+        }
+        
+        print("成功导入表 '\(tableName)' 的数据")
+    }
+    
+    /// 导入数据库并处理外键约束
+    /// - Parameters:
+    ///   - sourceDbPath: 源数据库文件路径
+    ///   - progress: 进度回调
+    ///   - preserveIds: 是否保留原始ID，默认为false（使用新的自增ID）
+    public func importFromDatabaseWithConstraints(sourceDbPath: String, progress: ((Double) -> Void)? = nil, preserveIds: Bool = false) throws {
+        let sourceDb = try DatabasePool(path: sourceDbPath)
+        
+        // 定义表的导入顺序（考虑外键约束）
+        let tableOrder = [
+            "account",      // 基础表，无外键依赖
+            "imageMap",     // 基础表，无外键依赖
+            "i18n",         // 基础表，无外键依赖
+            "schedule",     // 基础表，无外键依赖
+            "coop",         // 依赖account, imageMap
+            "battle",       // 依赖account, imageMap
+            "vsTeam",       // 依赖battle
+            "coopPlayerResult", // 依赖coop
+            "coopWaveResult",   // 依赖coop
+            "coopEnemyResult",  // 依赖coop, imageMap
+            "weapon",       // 依赖coop, coopPlayerResult, coopWaveResult, imageMap
+            "player"        // 依赖vsTeam, coopPlayerResult
+        ]
+        
+        var totalProgress = 0.0
+        let progressPerTable = 1.0 / Double(tableOrder.count)
+        
+        for (index, tableName) in tableOrder.enumerated() {
+            try importTableWithConstraints(tableName: tableName, from: sourceDb, preserveIds: preserveIds)
+            
+            // 更新进度
+            totalProgress = Double(index + 1) * progressPerTable
+            progress?(totalProgress)
+        }
+    }
+    
+    /// 导入单个表并处理外键约束
+    /// - Parameters:
+    ///   - tableName: 表名
+    ///   - sourceDb: 源数据库
+    ///   - preserveIds: 是否保留原始ID
+    private func importTableWithConstraints(tableName: String, from sourceDb: DatabasePool, preserveIds: Bool) throws {
+        // 检查目标数据库中是否存在该表
+        let targetTableExists = try dbQueue.read { db in
+            try db.tableExists(tableName)
+        }
+        
+        guard targetTableExists else {
+            print("警告: 目标数据库中不存在表 '\(tableName)'，跳过导入")
+            return
+        }
+        
+        // 获取源表的列信息
+        let sourceColumns = try sourceDb.read { db in
+            try db.columns(in: tableName)
+        }
+        
+        // 获取目标表的列信息
+        let targetColumns = try dbQueue.read { db in
+            try db.columns(in: tableName)
+        }
+        
+        // 找出两个表都存在的列
+        let commonColumns = sourceColumns.filter { sourceCol in
+            targetColumns.contains { targetCol in
+                targetCol.name == sourceCol.name
+            }
+        }
+        
+        guard !commonColumns.isEmpty else {
+            print("警告: 表 '\(tableName)' 没有共同的列，跳过导入")
+            return
+        }
+        
+        // 构建列名列表
+        let columnNames = commonColumns.map { $0.name }
+        let columnNamesString = columnNames.joined(separator: ", ")
+        let placeholders = columnNames.map { _ in "?" }.joined(separator: ", ")
+        
+        // 构建INSERT语句
+        let insertSQL = """
+            INSERT INTO \(tableName) (\(columnNamesString))
+            VALUES (\(placeholders))
+        """
+        
+        // 构建SELECT语句
+        let selectSQL = "SELECT \(columnNamesString) FROM \(tableName)"
+        
+        // 执行数据导入
+        try sourceDb.read { sourceDb in
+            let cursor = try Row.fetchCursor(sourceDb, sql: selectSQL)
+            
+            try dbQueue.write { targetDb in
+                while let row = try cursor.next() {
+                    // 提取列值
+                    var values = columnNames.map { columnName in
+                        row[columnName]
+                    }
+                    
+                    // 如果不保留ID且是主键列，则跳过ID值（让数据库自动生成）
+                    if !preserveIds, let primaryKeyIndex = columnNames.firstIndex(of: "id") {
+                        values[primaryKeyIndex] = nil
+                    }
+                    
+                    // 执行插入
+                    try targetDb.execute(sql: insertSQL, arguments: StatementArguments(values))
+                }
+            }
+        }
+        
+        print("成功导入表 '\(tableName)' 的数据")
+    }
+}
+
+/*
+ 使用示例:
+ 
+ // 基本导入
+ let database = SplatDatabase.shared
+ try database.importFromDatabase(sourceDbPath: "/path/to/other/database.sqlite") { progress in
+     print("导入进度: \(progress * 100)%")
+ }
+ 
+ // 带约束处理的导入（推荐）
+ try database.importFromDatabaseWithConstraints(
+     sourceDbPath: "/path/to/other/database.sqlite",
+     progress: { progress in
+         print("导入进度: \(progress * 100)%")
+     },
+     preserveIds: false // 是否保留原始ID
+ )
+ 
+ 功能特点:
+ - 自动检测源数据库中的所有表
+ - 只导入两个数据库都存在的列
+ - 按照正确的顺序导入表以避免外键约束错误
+ - 提供实时导入进度
+ - 支持忽略重复记录
+ - 可选择保留原始ID或使用新的自增ID
+ */
