@@ -267,21 +267,11 @@ extension SplatDatabase {
         let columnNamesString = columnNames.joined(separator: ", ")
         let placeholders = columnNames.map { _ in "?" }.joined(separator: ", ")
         
-        // 为特定表构建特殊的INSERT语句
-        let insertSQL: String
-        if ["account", "i18n", "imageMap", "schedule"].contains(tableName) {
-            // 对于有唯一约束的表，使用INSERT OR REPLACE来处理唯一约束冲突
-            insertSQL = """
-                INSERT OR REPLACE INTO \(tableName) (\(columnNamesString))
-                VALUES (\(placeholders))
-            """
-        } else {
-            // 对于其他表，使用普通的INSERT
-            insertSQL = """
-                INSERT INTO \(tableName) (\(columnNamesString))
-                VALUES (\(placeholders))
-            """
-        }
+        // 构建INSERT语句，使用INSERT OR IGNORE来忽略约束冲突
+        let insertSQL = """
+            INSERT OR IGNORE INTO \(tableName) (\(columnNamesString))
+            VALUES (\(placeholders))
+        """
         
         // 构建SELECT语句
         let selectSQL = "SELECT \(columnNamesString) FROM \(tableName)"
@@ -393,7 +383,7 @@ extension SplatDatabase {
  - 只导入两个数据库都存在的列
  - 按照正确的顺序导入表以避免外键约束错误
  - 提供实时导入进度
- - 支持忽略重复记录
+ - 自动忽略约束冲突（使用 INSERT OR IGNORE）
  - 可选择保留原始ID或使用新的自增ID
  - 自动处理外键引用更新
  */
