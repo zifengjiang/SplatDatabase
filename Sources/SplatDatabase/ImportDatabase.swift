@@ -150,9 +150,16 @@ extension SplatDatabase {
             return
         }
         
-        // 构建列名列表
+        // 构建列名列表，为SQL关键字添加引号
         let columnNames = commonColumns.map { $0.name }
-        let columnNamesString = columnNames.joined(separator: ", ")
+        let columnNamesString = columnNames.map { columnName in
+            // 为SQL关键字添加引号
+            let keywords = ["order", "group", "index", "table", "view", "trigger", "primary", "foreign", "key", "unique", "check", "default", "constraint", "references", "cascade", "restrict", "set", "null", "not", "and", "or", "as", "by", "from", "in", "is", "like", "limit", "offset", "select", "where", "with"]
+            if keywords.contains(columnName.lowercased()) {
+                return "\"\(columnName)\""
+            }
+            return columnName
+        }.joined(separator: ", ")
         let placeholders = columnNames.map { _ in "?" }.joined(separator: ", ")
         
         // 构建INSERT语句
@@ -195,11 +202,9 @@ extension SplatDatabase {
         // 存储ID映射关系（旧ID -> 新ID）
         var idMappings: [String: [Int: Int]] = [:]
         
-        // 定义表的导入顺序（考虑外键约束）
+        // 定义表的导入顺序（考虑外键约束），跳过i18n和imageMap表
         let tableOrder = [
             "account",      // 基础表，无外键依赖
-            "imageMap",     // 基础表，无外键依赖
-            "i18n",         // 基础表，无外键依赖
             "schedule",     // 基础表，无外键依赖
             "coop",         // 依赖account, imageMap
             "battle",       // 依赖account, imageMap
@@ -262,9 +267,16 @@ extension SplatDatabase {
             return
         }
         
-        // 构建列名列表
+        // 构建列名列表，为SQL关键字添加引号
         let columnNames = commonColumns.map { $0.name }
-        let columnNamesString = columnNames.joined(separator: ", ")
+        let columnNamesString = columnNames.map { columnName in
+            // 为SQL关键字添加引号
+            let keywords = ["order", "group", "index", "table", "view", "trigger", "primary", "foreign", "key", "unique", "check", "default", "constraint", "references", "cascade", "restrict", "set", "null", "not", "and", "or", "as", "by", "from", "in", "is", "like", "limit", "offset", "select", "where", "with"]
+            if keywords.contains(columnName.lowercased()) {
+                return "\"\(columnName)\""
+            }
+            return columnName
+        }.joined(separator: ", ")
         let placeholders = columnNames.map { _ in "?" }.joined(separator: ", ")
         
         // 构建INSERT语句，使用INSERT OR IGNORE来忽略约束冲突
@@ -348,15 +360,175 @@ extension SplatDatabase {
         if let tableForeignKeys = foreignKeyMappings[tableName] {
             for (columnName, referencedTable) in tableForeignKeys {
                 if let columnIndex = columnNames.firstIndex(of: columnName),
-                   let oldId = values[columnIndex] as? Int,
-                   let tableMappings = idMappings[referencedTable],
-                   let newId = tableMappings[oldId] {
-                    updatedValues[columnIndex] = newId
+                   let oldId = values[columnIndex] as? Int {
+                    
+                    // 对于i18n和imageMap表，设置为null（因为这些表不会被导入）
+                    if referencedTable == "i18n" || referencedTable == "imageMap" {
+                        updatedValues[columnIndex] = nil
+                    } else {
+                        // 对于其他表，使用ID映射
+                        if let tableMappings = idMappings[referencedTable],
+                           let newId = tableMappings[oldId] {
+                            updatedValues[columnIndex] = newId
+                        }
+                    }
                 }
             }
         }
         
         return updatedValues
+    }
+    
+    /// 完全替换数据库的方法，清空现有数据库并导入新数据库的所有数据
+    /// - Parameters:
+    ///   - sourceDbPath: 源数据库文件路径
+    ///   - progress: 进度回调，参数为0.0到1.0的进度值
+    public func replaceDatabaseWithSource(sourceDbPath: String, progress: ((Double) -> Void)? = nil) throws {
+        let sourceDb = try DatabasePool(path: sourceDbPath)
+        
+        // 获取源数据库中的所有表名
+        let sourceTableNames = try sourceDb.read { db in
+            try String.fetchAll(db, sql: "SELECT name FROM sqlite_master WHERE type='table'")
+        }
+        
+        // 过滤掉系统表，只处理应用表
+        let appTables = sourceTableNames/*.filter { !$0.hasPrefix("sqlite_") && !$0.hasPrefix("android_") }*/
+        
+        // 第一步：清空现有数据库的所有表
+        progress?(0.1)
+            // 重点：不要用 write（会自动开事务），先用 writeWithoutTransaction
+        try dbQueue.writeWithoutTransaction { db in
+                // 1) 在未开启事务时关闭外键检查（同一连接）
+            try db.execute(sql: "PRAGMA foreign_keys = OFF")
+
+                // 2) 可选：将外键检查延迟到提交时（有时有帮助）
+                // try db.execute(sql: "PRAGMA defer_foreign_keys = ON")
+
+                // 3) 手动开启一个事务来批量清空（性能更好，也便于回滚）
+            try db.inTransaction {
+                    // 获取目标库表名并过滤系统表
+                let targetTableNames = try String.fetchAll(db,
+                                                           sql: "SELECT name FROM sqlite_master WHERE type='table'")
+                let targetAppTables = targetTableNames/*filter { !$0.hasPrefix("sqlite_") && !$0.hasPrefix("android_") }*/
+
+                    // 如无 ON DELETE CASCADE，建议先删“子表”再删“父表”；
+                    // 简单粗暴：先按外键引用关系拓扑排序；如果不方便，先全部 DROP 再重建也是思路之一。
+                for table in targetAppTables {
+                        // 安全地引用表名（避免特殊字符/关键字问题）
+                    try db.execute(sql: "DELETE FROM \(table.quotedDatabaseIdentifier)")
+                        // 如需重置自增：
+                        // try db.execute(sql: "DELETE FROM sqlite_sequence WHERE name = ?", arguments: [table])
+                }
+
+                    // 也可以考虑：直接 DROP+CREATE（需要你有建表 SQL）
+                    // for table in targetAppTables { try db.execute(sql: "DROP TABLE \(table.quotedDatabaseIdentifier)") }
+
+                return .commit
+            }
+
+                // 4) 重新开启外键检查（仍在同一连接上）
+            try db.execute(sql: "PRAGMA foreign_keys = ON")
+        }
+
+        progress?(0.2)
+        
+        // 第二步：导入所有表的数据
+        var totalProgress = 0.2
+        let progressPerTable = 0.8 / Double(appTables.count)
+        
+        for (index, tableName) in appTables.enumerated() {
+            try importTableCompletely(tableName: tableName, from: sourceDb)
+            
+            // 更新进度
+            totalProgress = 0.2 + Double(index + 1) * progressPerTable
+            progress?(totalProgress)
+        }
+        
+        print("数据库替换完成")
+    }
+    
+    /// 完全导入单个表的数据
+    /// - Parameters:
+    ///   - tableName: 表名
+    ///   - sourceDb: 源数据库
+    private func importTableCompletely(tableName: String, from sourceDb: DatabasePool) throws {
+        // 检查目标数据库中是否存在该表
+        let targetTableExists = try dbQueue.read { db in
+            try db.tableExists(tableName)
+        }
+        
+        guard targetTableExists else {
+            print("警告: 目标数据库中不存在表 '\(tableName)'，跳过导入")
+            return
+        }
+        
+        // 获取源表的列信息
+        let sourceColumns = try sourceDb.read { db in
+            try db.columns(in: tableName)
+        }
+        
+        // 获取目标表的列信息
+        let targetColumns = try dbQueue.read { db in
+            try db.columns(in: tableName)
+        }
+        
+        // 找出两个表都存在的列
+        let commonColumns = sourceColumns.filter { sourceCol in
+            targetColumns.contains { targetCol in
+                targetCol.name == sourceCol.name
+            }
+        }
+        
+        guard !commonColumns.isEmpty else {
+            print("警告: 表 '\(tableName)' 没有共同的列，跳过导入")
+            return
+        }
+        
+        // 构建列名列表，为SQL关键字添加引号
+        let columnNames = commonColumns.map { $0.name }
+        let columnNamesString = columnNames.map { columnName in
+            // 为SQL关键字添加引号
+            let keywords = ["order", "group", "index", "table", "view", "trigger", "primary", "foreign", "key", "unique", "check", "default", "constraint", "references", "cascade", "restrict", "set", "null", "not", "and", "or", "as", "by", "from", "in", "is", "like", "limit", "offset", "select", "where", "with"]
+            if keywords.contains(columnName.lowercased()) {
+                return "\"\(columnName)\""
+            }
+            return columnName
+        }.joined(separator: ", ")
+        let placeholders = columnNames.map { _ in "?" }.joined(separator: ", ")
+        
+        // 构建INSERT语句，使用INSERT OR IGNORE来忽略约束冲突
+        let insertSQL = """
+            INSERT OR IGNORE INTO \(tableName) (\(columnNamesString))
+            VALUES (\(placeholders))
+        """
+        
+        // 构建SELECT语句
+        let selectSQL = "SELECT \(columnNamesString) FROM \(tableName)"
+        
+            // 执行数据导入
+        try sourceDb.read { sourceDb in
+            let cursor = try Row.fetchCursor(sourceDb, sql: selectSQL)
+
+                // ✅ 不要用 write；改用 writeWithoutTransaction 以便切换 FK
+            try dbQueue.writeWithoutTransaction { targetDb in
+                try targetDb.execute(sql: "PRAGMA foreign_keys = OFF")
+                    // try targetDb.execute(sql: "PRAGMA defer_foreign_keys = ON") // 可选
+
+                try targetDb.inTransaction {
+                    while let row = try cursor.next() {
+                        let values = columnNames.map { (name: String) -> (any DatabaseValueConvertible)? in
+                            row[name]
+                        }
+                        try targetDb.execute(sql: insertSQL, arguments: StatementArguments(values))
+                    }
+                    return .commit
+                }
+
+                try targetDb.execute(sql: "PRAGMA foreign_keys = ON")
+            }
+        }
+
+        print("成功导入表 '\(tableName)' 的数据")
     }
 }
 
@@ -378,6 +550,11 @@ extension SplatDatabase {
      preserveIds: false // 是否保留原始ID
  )
  
+ // 完全替换数据库（危险操作，会清空现有数据）
+ try SplatDatabase.replaceDatabase(sourceDbPath: "/path/to/other/database.sqlite") { progress in
+     print("替换进度: \(progress * 100)%")
+ }
+ 
  功能特点:
  - 自动检测源数据库中的所有表
  - 只导入两个数据库都存在的列
@@ -386,4 +563,8 @@ extension SplatDatabase {
  - 自动忽略约束冲突（使用 INSERT OR IGNORE）
  - 可选择保留原始ID或使用新的自增ID
  - 自动处理外键引用更新
+ - 跳过i18n和imageMap表的导入，相关外键设置为null
+ - 自动处理SQL关键字冲突（如order字段）
+ - 支持完全替换数据库（清空现有数据并导入新数据）
+ - 导入过程中临时禁用外键约束以确保数据完整性
  */

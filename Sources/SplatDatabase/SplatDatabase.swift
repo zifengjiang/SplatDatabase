@@ -467,6 +467,23 @@ public class SplatDatabase {
 
 
 extension SplatDatabase {
+    /// 便捷的数据库导入方法，通过SplatDatabase.shared调用
+    /// - Parameters:
+    ///   - sourceDbPath: 源数据库文件路径
+    ///   - progress: 进度回调，参数为0.0到1.0的进度值
+    ///   - preserveIds: 是否保留原始ID，默认为false（使用新的自增ID）
+    public static func importDatabase(sourceDbPath: String, progress: ((Double) -> Void)? = nil, preserveIds: Bool = false) throws {
+        try shared.importFromDatabaseWithConstraints(sourceDbPath: sourceDbPath, progress: progress, preserveIds: preserveIds)
+    }
+    
+    /// 完全替换数据库的方法，通过SplatDatabase.shared调用
+    /// - Parameters:
+    ///   - sourceDbPath: 源数据库文件路径
+    ///   - progress: 进度回调，参数为0.0到1.0的进度值
+    public static func replaceDatabase(sourceDbPath: String, progress: ((Double) -> Void)? = nil) throws {
+        try shared.replaceDatabaseWithSource(sourceDbPath: sourceDbPath, progress: progress)
+    }
+    
     public enum Mode:String{
         case battle = "battle"
         case coop = "coop"
