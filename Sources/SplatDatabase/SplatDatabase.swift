@@ -177,7 +177,129 @@ public class SplatDatabase {
             """)
         }
 
+        migrator.registerMigration("create_battle_view") { db in
+            let sql = """
         
+            CREATE VIEW battle_view AS
+        WITH OrderedBattle AS (
+        SELECT
+        b.*,
+        DATE(b.playedTime, 'localtime') AS dayKey_local,
+        LAG(b.mode) OVER (
+            PARTITION BY b.accountId
+            ORDER BY b.playedTime, b.id
+        ) AS prev_mode,
+        LAG(DATE(b.playedTime, 'localtime')) OVER (
+            PARTITION BY b.accountId
+            ORDER BY b.playedTime, b.id
+        ) AS prev_dayKey_local
+        FROM battle AS b
+        ),
+        GroupingBattle AS (
+        SELECT
+        *,
+        CASE
+            WHEN mode = prev_mode AND dayKey_local = prev_dayKey_local THEN 0
+            ELSE 1
+        END AS is_new_group
+        FROM OrderedBattle
+        )
+        SELECT
+        *,
+        SUM(is_new_group) OVER (
+        PARTITION BY accountId
+        ORDER BY playedTime, id
+        ) AS GroupID
+        FROM GroupingBattle;
+        """
+            try db.execute(sql: sql)
+        }
+
+        migrator.registerMigration("create_battle_group_status_view") { db in
+            let sql = """
+        CREATE VIEW battle_group_status_view AS
+        WITH base AS (
+        SELECT
+        bv.accountId,
+        bv.GroupID,
+        bv.dayKey_local,
+        bv.mode,
+        MIN(bv.playedTime) AS startTime, 
+        MAX(bv.playedTime) AS endTime,
+        COUNT(*) AS count,
+        SUM(CASE WHEN bv.judgement = 'WIN'  THEN 1 ELSE 0 END) AS winCount,
+        SUM(CASE WHEN bv.judgement like '%LOSE%' THEN 1 ELSE 0 END) AS loseCount,
+        SUM(CASE WHEN bv.judgement LIKE '%DRAW%' THEN 1 ELSE 0 END) AS drawCount,
+        SUM(CASE WHEN bv.judgement LIKE '%DEEMED_LOSE%' THEN 1 ELSE 0 END) as disconnectCount,
+        SUM(CASE
+                WHEN bv.judgement = 'WIN'
+                 AND bv.knockout IS NOT NULL
+                 AND bv.knockout = 'WIN'
+                THEN 1 ELSE 0
+            END) AS koWinCount,
+        SUM(CASE
+                WHEN bv.judgement like '%LOSE%'
+                 AND bv.knockout IS NOT NULL
+                 AND bv.knockout = 'LOSE'
+                THEN 1 ELSE 0
+            END) AS koLoseCount,
+        AVG(bv.duration)      AS avgDuration,
+        MAX(bv.myLeaguePower) AS maxMyLeaguePower,
+        MAX(bv.lastXPower)    AS maxLastXPower,
+        MAX(bv.entireXPower)  AS maxEntireXPower,
+        SUM(COALESCE(bv.festContribution, 0)) AS festContribution,
+        SUM(COALESCE(bv.festJewel, 0))        AS festJewel,
+        AVG(bv.myFestPower)                   AS avgMyFestPower
+        FROM battle_view AS bv
+        GROUP BY bv.accountId, bv.GroupID
+        ),
+        mystats AS (
+        SELECT
+        bv.accountId,
+        bv.GroupID,
+        SUM(COALESCE(p.kill,0))   AS 'kill',
+        SUM(COALESCE(p.death,0))   AS death,
+        SUM(COALESCE(p.assist,0))  AS assist,
+        SUM(COALESCE(p.special,0)) AS special
+        FROM battle_view AS bv
+        JOIN vsTeam AS t ON t.battleId = bv.id
+        JOIN player AS p ON p.vsTeamId = t.id
+                    AND p.isMyself = 1
+                    AND p.isCoop   = 0
+        GROUP BY bv.accountId, bv.GroupID
+        )
+        SELECT
+        base.accountId,
+        base.GroupID,
+        base.mode,
+        base.startTime,
+        base.endTime,
+        base.count,
+        base.winCount,
+        base.loseCount,
+        base.drawCount,
+        base.disconnectCount,
+        base.koWinCount,
+        base.koLoseCount,
+        base.avgDuration,
+        base.maxMyLeaguePower,
+        base.maxLastXPower,
+        base.maxEntireXPower,
+        base.festContribution,
+        base.festJewel,
+        base.avgMyFestPower,
+        mystats.kill,
+        mystats.death,
+        mystats.assist,
+        mystats.special
+        FROM base
+        LEFT JOIN mystats
+        ON mystats.accountId = base.accountId
+        AND mystats.GroupID   = base.GroupID;
+        """
+            try db.execute(sql: sql)
+        }
+
     migrator.registerMigration("insertI18nForVersion920") { db in
         try self.updateI18n(db: db)
     }
@@ -490,53 +612,95 @@ extension SplatDatabase {
     }
 
     public func filterNotExists(in kind: Mode, ids: [String]) throws -> [String] {
-            // 提取所有需要的字段
-        let sp3PrincipalIds = ids.map { $0.getDetailUUID() }
-        let playedTimes = ids.map { $0.base64DecodedString.extractedDate! }
-        let sp3Ids = ids.map { $0.extractUserId() }
+            // 1) 预解析 & 校验，建议把 playedTime 统一成 Int64 时间戳或标准化字符串
+        struct Key: Hashable { let p: String; let t: Date; let u: String } // principal, time, sp3Id
 
-            // 构建SQL查询语句
-        let sql = """
-                SELECT
-                sp3PrincipalId, playedTime, sp3Id
-                FROM
-                \(kind)
-                JOIN account ON \(kind).accountId = account.id
-                WHERE
-                sp3PrincipalId IN (\(sp3PrincipalIds.map { _ in "?" }.joined(separator: ", ")))
-                AND playedTime IN (\(playedTimes.map { _ in "?" }.joined(separator: ", ")))
-                AND sp3Id IN (\(sp3Ids.map { _ in "?" }.joined(separator: ", ")))
-              """
+        var tuples: [Key] = []
+        tuples.reserveCapacity(ids.count)
 
-            // 将所有参数转换为DatabaseValueConvertible数组
-        let arguments: [DatabaseValueConvertible] = sp3PrincipalIds + playedTimes + sp3Ids
+            // 映射表：三元组 -> 原始 id，便于 O(1) 回表
+        var keyToOriginal: [Key: String] = [:]
+        keyToOriginal.reserveCapacity(ids.count)
 
-        let existingRecords = try dbQueue.read { db in
-                // 执行查询，获取存在的记录
-            try Row.fetchAll(db, sql: sql, arguments: StatementArguments(arguments))
+        for id in ids {
+            guard
+                  let date = id.base64DecodedString.extractedDate
+            else {
+                    // 这里可选择跳过或抛错；我选择抛错更安全
+                throw NSError(domain: "FilterNotExists", code: 1, userInfo: [NSLocalizedDescriptionKey: "Invalid id: \(id)"])
+            }
+            let p = id.getDetailUUID()
+            let u = id.extractUserId()
+            let t = date
+            let key = Key(p: p, t: t, u: u)
+            tuples.append(key)
+            keyToOriginal[key] = id
         }
 
+        if tuples.isEmpty { return [] }
 
-            // 创建一个Set用于存储已存在的记录ID
-        var existingSet: Set<String> = []
-        for record in existingRecords {
-            let sp3PrincipalId: String = record["sp3PrincipalId"]
-            let playedTime: Date = record["playedTime"]
-            let sp3Id: String = record["sp3Id"]
+            // 2) 分片，避免超出 SQLite 占位符上限（每行 3 个占位符）
+        let maxVars = 900 // 留些余量，避免恰好 999
+        let perChunk = max(1, maxVars / 3)
+        var missing: Set<Key> = []
 
-                // 重建原始ID
-            if let originalId = ids.first(where: {
-                $0.getDetailUUID() == sp3PrincipalId &&
-                $0.base64DecodedString.extractedDate! == playedTime &&
-                $0.extractUserId() == sp3Id
-            }) {
-                existingSet.insert(originalId)
+        let tableName = kind  // 确保从枚举白名单映射得到安全表名
+                                           // 可选：如果需要 account 过滤，这里决定是否保留 JOIN account
+        let baseSQLPrefix = """
+        WITH input(sp3PrincipalId, playedTime, sp3Id) AS (VALUES
+        """
+
+        let baseSQLSuffix = """
+            )
+            SELECT i.sp3PrincipalId, i.playedTime, i.sp3Id
+            FROM input i
+            LEFT JOIN \(tableName) t
+              ON  t.sp3PrincipalId = i.sp3PrincipalId
+              AND t.playedTime     = i.playedTime
+            LEFT JOIN account a
+              ON  t.accountId = a.id
+              AND a.sp3Id     = i.sp3Id
+            WHERE t.sp3PrincipalId IS NULL
+            """
+
+        try dbQueue.read { db in
+            var start = 0
+            while start < tuples.count {
+                let end = min(start + perChunk, tuples.count)
+                let chunk = tuples[start..<end]
+
+                    // 构造 VALUES (?,?,?),(?,?,?),...
+                let valuesPlaceholders = Array(repeating: "(?,?,?)", count: chunk.count).joined(separator: ",")
+                let sql = baseSQLPrefix + valuesPlaceholders + "\n" + baseSQLSuffix
+
+                    // 组装参数，注意 playedTime 用与库中一致的类型（这里用 Int64）
+                var args: [DatabaseValueConvertible] = []
+                args.reserveCapacity(chunk.count * 3)
+                for k in chunk {
+                    args.append(k.p)
+                    args.append(k.t)
+                    args.append(k.u)
+                }
+
+                let rows = try Row.fetchAll(db, sql: sql, arguments: StatementArguments(args))
+                for row in rows {
+                    let p: String = row["sp3PrincipalId"]
+                    let t: Date  = row["playedTime"]
+                    let u: String = row["sp3Id"]
+                    missing.insert(Key(p: p, t: t, u: u))
+                }
+                start = end
             }
         }
 
-            // 计算不存在的ID
-        let notExistIds = ids.filter { !existingSet.contains($0) }
-
+            // 3) 将缺失三元组映射回原始 ids
+        var notExistIds: [String] = []
+        notExistIds.reserveCapacity(missing.count)
+        for key in missing {
+            if let original = keyToOriginal[key] {
+                notExistIds.append(original)
+            }
+        }
         return notExistIds
     }
 
