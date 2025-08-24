@@ -135,11 +135,87 @@ extension SplatDatabase {
         }
     }
 
+    /// 删除指定的battle记录及其所有相关数据
+    /// - Parameter battleId: battle记录的ID
+    public func deleteBattle(battleId: Int64) throws {
+        try dbQueue.write { db in
+            // 删除顺序：先删除子表，再删除主表
+            
+            // 1. 删除vsTeam相关的player记录
+            let vsTeamIds = try Int64.fetchAll(db, sql: "SELECT id FROM vsTeam WHERE battleId = ?", arguments: [battleId])
+            for vsTeamId in vsTeamIds {
+                try db.execute(sql: "DELETE FROM player WHERE vsTeamId = ?", arguments: [vsTeamId])
+            }
+            
+            // 2. 删除vsTeam记录
+            try db.execute(sql: "DELETE FROM vsTeam WHERE battleId = ?", arguments: [battleId])
+            
+            // 3. 最后删除battle主记录
+            try db.execute(sql: "DELETE FROM battle WHERE id = ?", arguments: [battleId])
+        }
+    }
+    
+    /// 删除指定的battle记录及其所有相关数据（通过sp3PrincipalId）
+    /// - Parameter sp3PrincipalId: battle记录的sp3PrincipalId
+    public func deleteBattle(sp3PrincipalId: String) throws {
+        try dbQueue.write { db in
+            let battleIds = try Int64.fetchAll(db, sql: "SELECT id FROM battle WHERE sp3PrincipalId = ?", arguments: [sp3PrincipalId])
+            for battleId in battleIds {
+                try deleteBattle(battleId: battleId, db: db)
+            }
+        }
+    }
+    
+    /// 删除所有battle记录及其相关数据
     public func deleteAllBattles() throws {
         try dbQueue.write { db in
-            try db.execute(literal: "DELETE FROM player WHERE vsTeamId IS NOT NULL;")
-            try db.execute(literal: "DELETE FROM vsTeam;")
-            try db.execute(literal: "DELETE FROM battle;")
+            // 删除所有player记录（与battle相关的）
+            try db.execute(sql: "DELETE FROM player WHERE vsTeamId IS NOT NULL")
+            
+            // 删除所有vsTeam记录
+            try db.execute(sql: "DELETE FROM vsTeam")
+            
+            // 删除所有battle记录
+            try db.execute(sql: "DELETE FROM battle")
+        }
+    }
+    
+    /// 内部删除方法，在事务中执行
+    private func deleteBattle(battleId: Int64, db: Database) throws {
+        // 1. 删除vsTeam相关的player记录
+        let vsTeamIds = try Int64.fetchAll(db, sql: "SELECT id FROM vsTeam WHERE battleId = ?", arguments: [battleId])
+        for vsTeamId in vsTeamIds {
+            try db.execute(sql: "DELETE FROM player WHERE vsTeamId = ?", arguments: [vsTeamId])
+        }
+        
+        // 2. 删除vsTeam记录
+        try db.execute(sql: "DELETE FROM vsTeam WHERE battleId = ?", arguments: [battleId])
+        
+        // 3. 最后删除battle主记录
+        try db.execute(sql: "DELETE FROM battle WHERE id = ?", arguments: [battleId])
+    }
+    
+    /// 按时间范围删除battle记录及其相关数据
+    /// - Parameters:
+    ///   - startDate: 开始时间
+    ///   - endDate: 结束时间
+    public func deleteBattles(from startDate: Date, to endDate: Date) throws {
+        try dbQueue.write { db in
+            let battleIds = try Int64.fetchAll(db, sql: "SELECT id FROM battle WHERE playedTime BETWEEN ? AND ?", arguments: [startDate, endDate])
+            for battleId in battleIds {
+                try deleteBattle(battleId: battleId, db: db)
+            }
+        }
+    }
+    
+    /// 按账户ID删除battle记录及其相关数据
+    /// - Parameter accountId: 账户ID
+    public func deleteBattles(accountId: Int64) throws {
+        try dbQueue.write { db in
+            let battleIds = try Int64.fetchAll(db, sql: "SELECT id FROM battle WHERE accountId = ?", arguments: [accountId])
+            for battleId in battleIds {
+                try deleteBattle(battleId: battleId, db: db)
+            }
         }
     }
 }

@@ -67,3 +67,68 @@ try database.importFromDatabaseWithConstraints(
 - 建议在导入前备份目标数据库
 - 大量数据导入可能需要较长时间
 
+## Database Operations
+
+### Insert Operations
+
+The package provides methods to insert battle and coop records with all related data.
+
+### Delete Operations
+
+#### Coop (Salmon Run) Deletion Methods
+
+```swift
+// Delete a specific coop record by ID
+try database.deleteCoop(coopId: 123)
+
+// Delete coop records by sp3PrincipalId
+try database.deleteCoop(sp3PrincipalId: "uuid-string")
+
+// Delete all coop records
+try database.deleteAllCoops()
+
+// Delete coop records within a time range
+try database.deleteCoops(from: startDate, to: endDate)
+
+// Delete coop records for a specific account
+try database.deleteCoops(accountId: 456)
+```
+
+#### Battle Deletion Methods
+
+```swift
+// Delete a specific battle record by ID
+try database.deleteBattle(battleId: 123)
+
+// Delete battle records by sp3PrincipalId
+try database.deleteBattle(sp3PrincipalId: "uuid-string")
+
+// Delete all battle records
+try database.deleteAllBattles()
+
+// Delete battle records within a time range
+try database.deleteBattles(from: startDate, to: endDate)
+
+// Delete battle records for a specific account
+try database.deleteBattles(accountId: 456)
+```
+
+### Delete Operation Details
+
+The delete operations ensure referential integrity by deleting related records in the correct order:
+
+**Coop Deletion Order:**
+1. Weapon records (coopId, coopPlayerResultId, coopWaveResultId)
+2. CoopEnemyResult records
+3. CoopWaveResult records
+4. Player records (coopPlayerResultId)
+5. CoopPlayerResult records
+6. Coop main record
+
+**Battle Deletion Order:**
+1. Player records (vsTeamId)
+2. VsTeam records
+3. Battle main record
+
+All delete operations are performed within database transactions to ensure data consistency.
+

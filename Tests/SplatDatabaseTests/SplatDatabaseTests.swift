@@ -105,7 +105,7 @@ class Splat3DatabaseTests: XCTestCase {
         let sourceDb = try DatabasePool(path: tempSourceDbPath)
         
         // 在源数据库中创建一些测试数据
-        try sourceDb.write { db in
+        try await sourceDb.write { db in
             try db.create(table: "account", ifNotExists: true) { t in
                 t.autoIncrementedPrimaryKey("id")
                 t.column("sp3Id", .text).unique()
@@ -138,7 +138,7 @@ class Splat3DatabaseTests: XCTestCase {
         let sourceDb = try DatabasePool(path: tempSourceDbPath)
         
         // 在源数据库中创建一些测试数据
-        try sourceDb.write { db in
+        try await sourceDb.write { db in
             try db.create(table: "account", ifNotExists: true) { t in
                 t.autoIncrementedPrimaryKey("id")
                 t.column("sp3Id", .text).unique()
@@ -219,6 +219,258 @@ class Splat3DatabaseTests: XCTestCase {
                 }
             }
         }
+    }
+
+    // MARK: - Delete Tests
+    
+    /// 测试删除指定的coop记录
+    /// - Parameters:
+    ///   - databasePath: 数据库路径，如果为nil则使用默认路径
+    ///   - coopId: coop记录的ID，如果为nil则使用sp3PrincipalId
+    ///   - sp3PrincipalId: coop记录的sp3PrincipalId，如果coopId为nil时使用
+    func testDeleteCoop(databasePath: String? = nil, coopId: Int64? = nil, sp3PrincipalId: String? = nil) async throws {
+        // 使用指定的数据库路径或默认路径
+        let testDbManager: SplatDatabase
+        if let path = databasePath {
+            testDbManager = SplatDatabase(path: path)
+        } else {
+            testDbManager = dbManager
+        }
+        
+        // 获取删除前的数据统计
+        let beforeStats = try await getCoopTableStats(dbManager: testDbManager)
+        print("删除前的数据统计:")
+        printStats(beforeStats)
+        
+        // 执行删除操作
+        if let id = coopId {
+            print("正在删除coopId: \(id)")
+            try testDbManager.deleteCoop(coopId: id)
+        } else if let principalId = sp3PrincipalId {
+            print("正在删除sp3PrincipalId: \(principalId)")
+            try testDbManager.deleteCoop(sp3PrincipalId: principalId)
+        } else {
+            XCTFail("必须提供coopId或sp3PrincipalId")
+            return
+        }
+        
+        // 获取删除后的数据统计
+        let afterStats = try await getCoopTableStats(dbManager: testDbManager)
+        print("删除后的数据统计:")
+        printStats(afterStats)
+        
+        // 验证删除结果
+        verifyCoopDeletion(beforeStats: beforeStats, afterStats: afterStats)
+    }
+    
+    /// 测试删除指定的battle记录
+    /// - Parameters:
+    ///   - databasePath: 数据库路径，如果为nil则使用默认路径
+    ///   - battleId: battle记录的ID，如果为nil则使用sp3PrincipalId
+    ///   - sp3PrincipalId: battle记录的sp3PrincipalId，如果battleId为nil时使用
+    func testDeleteBattle(databasePath: String? = nil, battleId: Int64? = nil, sp3PrincipalId: String? = nil) async throws {
+        // 使用指定的数据库路径或默认路径
+        let testDbManager: SplatDatabase
+        if let path = databasePath {
+            testDbManager = SplatDatabase(path: path)
+        } else {
+            testDbManager = dbManager
+        }
+        
+        // 获取删除前的数据统计
+        let beforeStats = try await getBattleTableStats(dbManager: testDbManager)
+        print("删除前的数据统计:")
+        printStats(beforeStats)
+        
+        // 执行删除操作
+        if let id = battleId {
+            print("正在删除battleId: \(id)")
+            try testDbManager.deleteBattle(battleId: id)
+        } else if let principalId = sp3PrincipalId {
+            print("正在删除sp3PrincipalId: \(principalId)")
+            try testDbManager.deleteBattle(sp3PrincipalId: principalId)
+        } else {
+            XCTFail("必须提供battleId或sp3PrincipalId")
+            return
+        }
+        
+        // 获取删除后的数据统计
+        let afterStats = try await getBattleTableStats(dbManager: testDbManager)
+        print("删除后的数据统计:")
+        printStats(afterStats)
+        
+        // 验证删除结果
+        verifyBattleDeletion(beforeStats: beforeStats, afterStats: afterStats)
+    }
+    
+    /// 测试删除所有coop记录
+    func testDeleteAllCoops() async throws {
+        // 获取删除前的数据统计
+        let beforeStats = try await getCoopTableStats(dbManager: dbManager)
+        print("删除所有coop前的数据统计:")
+        printStats(beforeStats)
+        
+        // 执行删除操作
+        try dbManager.deleteAllCoops()
+        
+        // 获取删除后的数据统计
+        let afterStats = try await getCoopTableStats(dbManager: dbManager)
+        print("删除所有coop后的数据统计:")
+        printStats(afterStats)
+        
+        // 验证删除结果
+        verifyAllCoopDeletion(beforeStats: beforeStats, afterStats: afterStats)
+    }
+    
+    /// 测试删除所有battle记录
+    func testDeleteAllBattles() async throws {
+        // 获取删除前的数据统计
+        let beforeStats = try await getBattleTableStats(dbManager: dbManager)
+        print("删除所有battle前的数据统计:")
+        printStats(beforeStats)
+        
+        // 执行删除操作
+        try dbManager.deleteAllBattles()
+        
+        // 获取删除后的数据统计
+        let afterStats = try await getBattleTableStats(dbManager: dbManager)
+        print("删除所有battle后的数据统计:")
+        printStats(afterStats)
+        
+        // 验证删除结果
+        verifyAllBattleDeletion(beforeStats: beforeStats, afterStats: afterStats)
+    }
+    
+    // MARK: - Helper Methods
+    
+    /// 获取coop相关表的数据统计
+    private func getCoopTableStats(dbManager: SplatDatabase) async throws -> [String: Int] {
+        return try await dbManager.dbQueue.read { db in
+            let coopCount = try Int.fetchOne(db, sql: "SELECT COUNT(*) FROM coop") ?? 0
+            let weaponCount = try Int.fetchOne(db, sql: "SELECT COUNT(*) FROM weapon WHERE coopId IS NOT NULL OR coopPlayerResultId IS NOT NULL OR coopWaveResultId IS NOT NULL") ?? 0
+            let coopEnemyResultCount = try Int.fetchOne(db, sql: "SELECT COUNT(*) FROM coopEnemyResult") ?? 0
+            let coopWaveResultCount = try Int.fetchOne(db, sql: "SELECT COUNT(*) FROM coopWaveResult") ?? 0
+            let coopPlayerResultCount = try Int.fetchOne(db, sql: "SELECT COUNT(*) FROM coopPlayerResult") ?? 0
+            let playerCount = try Int.fetchOne(db, sql: "SELECT COUNT(*) FROM player WHERE coopPlayerResultId IS NOT NULL") ?? 0
+            
+            return [
+                "coop": coopCount,
+                "weapon": weaponCount,
+                "coopEnemyResult": coopEnemyResultCount,
+                "coopWaveResult": coopWaveResultCount,
+                "coopPlayerResult": coopPlayerResultCount,
+                "player": playerCount
+            ]
+        }
+    }
+    
+    /// 获取battle相关表的数据统计
+    private func getBattleTableStats(dbManager: SplatDatabase) async throws -> [String: Int] {
+        return try await dbManager.dbQueue.read { db in
+            let battleCount = try Int.fetchOne(db, sql: "SELECT COUNT(*) FROM battle") ?? 0
+            let vsTeamCount = try Int.fetchOne(db, sql: "SELECT COUNT(*) FROM vsTeam") ?? 0
+            let playerCount = try Int.fetchOne(db, sql: "SELECT COUNT(*) FROM player WHERE vsTeamId IS NOT NULL") ?? 0
+            
+            return [
+                "battle": battleCount,
+                "vsTeam": vsTeamCount,
+                "player": playerCount
+            ]
+        }
+    }
+    
+    /// 打印数据统计
+    private func printStats(_ stats: [String: Int]) {
+        for (table, count) in stats.sorted(by: { $0.key < $1.key }) {
+            print("  \(table): \(count)")
+        }
+    }
+    
+    /// 验证coop删除结果
+    private func verifyCoopDeletion(beforeStats: [String: Int], afterStats: [String: Int]) {
+        // 验证所有相关表的数据都有减少
+        for (table, beforeCount) in beforeStats {
+            let afterCount = afterStats[table] ?? 0
+            XCTAssertLessThanOrEqual(afterCount, beforeCount, "表 \(table) 的数据应该减少或保持不变")
+            
+            if beforeCount > 0 {
+                print("  \(table): \(beforeCount) -> \(afterCount)")
+            }
+        }
+    }
+    
+    /// 验证battle删除结果
+    private func verifyBattleDeletion(beforeStats: [String: Int], afterStats: [String: Int]) {
+        // 验证所有相关表的数据都有减少
+        for (table, beforeCount) in beforeStats {
+            let afterCount = afterStats[table] ?? 0
+            XCTAssertLessThanOrEqual(afterCount, beforeCount, "表 \(table) 的数据应该减少或保持不变")
+            
+            if beforeCount > 0 {
+                print("  \(table): \(beforeCount) -> \(afterCount)")
+            }
+        }
+    }
+    
+    /// 验证所有coop删除结果
+    private func verifyAllCoopDeletion(beforeStats: [String: Int], afterStats: [String: Int]) {
+        // 验证所有coop相关表的数据都被清空
+        XCTAssertEqual(afterStats["coop"] ?? 0, 0, "coop表应该被清空")
+        XCTAssertEqual(afterStats["weapon"] ?? 0, 0, "weapon表中coop相关的记录应该被清空")
+        XCTAssertEqual(afterStats["coopEnemyResult"] ?? 0, 0, "coopEnemyResult表应该被清空")
+        XCTAssertEqual(afterStats["coopWaveResult"] ?? 0, 0, "coopWaveResult表应该被清空")
+        XCTAssertEqual(afterStats["coopPlayerResult"] ?? 0, 0, "coopPlayerResult表应该被清空")
+        XCTAssertEqual(afterStats["player"] ?? 0, 0, "player表中coop相关的记录应该被清空")
+        
+        print("所有coop相关数据已成功删除")
+    }
+    
+    /// 验证所有battle删除结果
+    private func verifyAllBattleDeletion(beforeStats: [String: Int], afterStats: [String: Int]) {
+        // 验证所有battle相关表的数据都被清空
+        XCTAssertEqual(afterStats["battle"] ?? 0, 0, "battle表应该被清空")
+        XCTAssertEqual(afterStats["vsTeam"] ?? 0, 0, "vsTeam表应该被清空")
+        XCTAssertEqual(afterStats["player"] ?? 0, 0, "player表中battle相关的记录应该被清空")
+        
+        print("所有battle相关数据已成功删除")
+    }
+    
+    // MARK: - Example Test Functions
+    
+    /// 示例：测试删除指定的coop记录（通过coopId）
+    func testDeleteSpecificCoopById() async throws {
+        // 你可以修改这些参数来测试特定的记录
+        let testCoopId: Int64 = 1 // 替换为实际的coopId
+        let testDatabasePath: String? = "/Users/jiangfeng/XcodeProject/jiangfeng/jeffjiang.imink 2025-08-23 21:28.08.609.xcappdata/AppData/Library/Application Support/db.sqlite" // 可选：指定数据库路径
+
+        try await testDeleteCoop(databasePath: testDatabasePath,coopId: testCoopId)
+    }
+    
+    /// 示例：测试删除指定的coop记录（通过sp3PrincipalId）
+    func testDeleteSpecificCoopByPrincipalId() async throws {
+        // 你可以修改这些参数来测试特定的记录
+        let testSp3PrincipalId: String = "your-sp3-principal-id" // 替换为实际的sp3PrincipalId
+        // let testDatabasePath: String? = "/path/to/your/database.sqlite" // 可选：指定数据库路径
+        
+        try await testDeleteCoop(sp3PrincipalId: testSp3PrincipalId)
+    }
+    
+    /// 示例：测试删除指定的battle记录（通过battleId）
+    func testDeleteSpecificBattleById() async throws {
+        // 你可以修改这些参数来测试特定的记录
+        let testBattleId: Int64 = 1 // 替换为实际的battleId
+        // let testDatabasePath: String? = "/path/to/your/database.sqlite" // 可选：指定数据库路径
+        
+        try await testDeleteBattle(battleId: testBattleId)
+    }
+    
+    /// 示例：测试删除指定的battle记录（通过sp3PrincipalId）
+    func testDeleteSpecificBattleByPrincipalId() async throws {
+        // 你可以修改这些参数来测试特定的记录
+        let testSp3PrincipalId: String = "your-sp3-principal-id" // 替换为实际的sp3PrincipalId
+        // let testDatabasePath: String? = "/path/to/your/database.sqlite" // 可选：指定数据库路径
+        
+        try await testDeleteBattle(sp3PrincipalId: testSp3PrincipalId)
     }
 
 }

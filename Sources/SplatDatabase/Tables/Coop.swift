@@ -309,3 +309,138 @@ extension SplatDatabase {
 
 }
 
+extension SplatDatabase {
+    /// 删除指定的coop记录及其所有相关数据
+    /// - Parameter coopId: coop记录的ID
+    public func deleteCoop(coopId: Int64) throws {
+        try dbQueue.write { db in
+            // 删除顺序：先删除子表，再删除主表
+            
+            // 1. 删除weapon表中与coop相关的记录
+            try db.execute(sql: "DELETE FROM weapon WHERE coopId = ?", arguments: [coopId])
+            
+            // 2. 删除coopEnemyResult记录
+            try db.execute(sql: "DELETE FROM coopEnemyResult WHERE coopId = ?", arguments: [coopId])
+            
+            // 3. 删除coopWaveResult相关的weapon记录
+            let waveResultIds = try Int64.fetchAll(db, sql: "SELECT id FROM coopWaveResult WHERE coopId = ?", arguments: [coopId])
+            for waveResultId in waveResultIds {
+                try db.execute(sql: "DELETE FROM weapon WHERE coopWaveResultId = ?", arguments: [waveResultId])
+            }
+            
+            // 4. 删除coopWaveResult记录
+            try db.execute(sql: "DELETE FROM coopWaveResult WHERE coopId = ?", arguments: [coopId])
+            
+            // 5. 删除coopPlayerResult相关的weapon记录
+            let playerResultIds = try Int64.fetchAll(db, sql: "SELECT id FROM coopPlayerResult WHERE coopId = ?", arguments: [coopId])
+            for playerResultId in playerResultIds {
+                try db.execute(sql: "DELETE FROM weapon WHERE coopPlayerResultId = ?", arguments: [playerResultId])
+            }
+            
+            // 6. 删除player记录（通过coopPlayerResultId关联）
+            for playerResultId in playerResultIds {
+                try db.execute(sql: "DELETE FROM player WHERE coopPlayerResultId = ?", arguments: [playerResultId])
+            }
+            
+            // 7. 删除coopPlayerResult记录
+            try db.execute(sql: "DELETE FROM coopPlayerResult WHERE coopId = ?", arguments: [coopId])
+            
+            // 8. 最后删除coop主记录
+            try db.execute(sql: "DELETE FROM coop WHERE id = ?", arguments: [coopId])
+        }
+    }
+    
+    /// 删除指定的coop记录及其所有相关数据（通过sp3PrincipalId）
+    /// - Parameter sp3PrincipalId: coop记录的sp3PrincipalId
+    public func deleteCoop(sp3PrincipalId: String) throws {
+        try dbQueue.write { db in
+            let coopIds = try Int64.fetchAll(db, sql: "SELECT id FROM coop WHERE sp3PrincipalId = ?", arguments: [sp3PrincipalId])
+            for coopId in coopIds {
+                try deleteCoop(coopId: coopId, db: db)
+            }
+        }
+    }
+    
+    /// 删除所有coop记录及其相关数据
+    public func deleteAllCoops() throws {
+        try dbQueue.write { db in
+            // 删除所有weapon记录（与coop相关的）
+            try db.execute(sql: "DELETE FROM weapon WHERE coopId IS NOT NULL OR coopPlayerResultId IS NOT NULL OR coopWaveResultId IS NOT NULL")
+            
+            // 删除所有coopEnemyResult记录
+            try db.execute(sql: "DELETE FROM coopEnemyResult")
+            
+            // 删除所有coopWaveResult记录
+            try db.execute(sql: "DELETE FROM coopWaveResult")
+            
+            // 删除所有player记录（与coop相关的）
+            try db.execute(sql: "DELETE FROM player WHERE coopPlayerResultId IS NOT NULL")
+            
+            // 删除所有coopPlayerResult记录
+            try db.execute(sql: "DELETE FROM coopPlayerResult")
+            
+            // 删除所有coop记录
+            try db.execute(sql: "DELETE FROM coop")
+        }
+    }
+    
+    /// 内部删除方法，在事务中执行
+    private func deleteCoop(coopId: Int64, db: Database) throws {
+        // 1. 删除weapon表中与coop相关的记录
+        try db.execute(sql: "DELETE FROM weapon WHERE coopId = ?", arguments: [coopId])
+        
+        // 2. 删除coopEnemyResult记录
+        try db.execute(sql: "DELETE FROM coopEnemyResult WHERE coopId = ?", arguments: [coopId])
+        
+        // 3. 删除coopWaveResult相关的weapon记录
+        let waveResultIds = try Int64.fetchAll(db, sql: "SELECT id FROM coopWaveResult WHERE coopId = ?", arguments: [coopId])
+        for waveResultId in waveResultIds {
+            try db.execute(sql: "DELETE FROM weapon WHERE coopWaveResultId = ?", arguments: [waveResultId])
+        }
+        
+        // 4. 删除coopWaveResult记录
+        try db.execute(sql: "DELETE FROM coopWaveResult WHERE coopId = ?", arguments: [coopId])
+        
+        // 5. 删除coopPlayerResult相关的weapon记录
+        let playerResultIds = try Int64.fetchAll(db, sql: "SELECT id FROM coopPlayerResult WHERE coopId = ?", arguments: [coopId])
+        for playerResultId in playerResultIds {
+            try db.execute(sql: "DELETE FROM weapon WHERE coopPlayerResultId = ?", arguments: [playerResultId])
+        }
+        
+        // 6. 删除player记录（通过coopPlayerResultId关联）
+        for playerResultId in playerResultIds {
+            try db.execute(sql: "DELETE FROM player WHERE coopPlayerResultId = ?", arguments: [playerResultId])
+        }
+        
+        // 7. 删除coopPlayerResult记录
+        try db.execute(sql: "DELETE FROM coopPlayerResult WHERE coopId = ?", arguments: [coopId])
+        
+        // 8. 最后删除coop主记录
+        try db.execute(sql: "DELETE FROM coop WHERE id = ?", arguments: [coopId])
+    }
+    
+    /// 按时间范围删除coop记录及其相关数据
+    /// - Parameters:
+    ///   - startDate: 开始时间
+    ///   - endDate: 结束时间
+    public func deleteCoops(from startDate: Date, to endDate: Date) throws {
+        try dbQueue.write { db in
+            let coopIds = try Int64.fetchAll(db, sql: "SELECT id FROM coop WHERE playedTime BETWEEN ? AND ?", arguments: [startDate, endDate])
+            for coopId in coopIds {
+                try deleteCoop(coopId: coopId, db: db)
+            }
+        }
+    }
+    
+    /// 按账户ID删除coop记录及其相关数据
+    /// - Parameter accountId: 账户ID
+    public func deleteCoops(accountId: Int64) throws {
+        try dbQueue.write { db in
+            let coopIds = try Int64.fetchAll(db, sql: "SELECT id FROM coop WHERE accountId = ?", arguments: [accountId])
+            for coopId in coopIds {
+                try deleteCoop(coopId: coopId, db: db)
+            }
+        }
+    }
+}
+
