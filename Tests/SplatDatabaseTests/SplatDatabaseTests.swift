@@ -472,6 +472,263 @@ class Splat3DatabaseTests: XCTestCase {
         
         try await testDeleteBattle(sp3PrincipalId: testSp3PrincipalId)
     }
+    
+    // MARK: - Soft Delete and Favorite Tests
+    
+    /// 测试coop的软删除和恢复功能
+    func testCoopSoftDeleteAndRestore() async throws {
+        // 首先插入一个coop记录用于测试
+        let bundle = Bundle.module
+        let path = bundle.url(forResource: "CoopDetailHolder", withExtension: "json")
+        let json: JSON = JSON(parseJSON: try String(contentsOfFile: path!.path))
+        let value = json["data"]["coopHistoryDetail"]
+        
+        try dbManager.insertCoop(json: value)
+        
+        // 获取插入的coop记录
+        let coops = try await dbManager.fetchActiveCoops()
+        XCTAssertGreaterThan(coops.count, 0, "应该有至少一个coop记录")
+        
+        let testCoop = coops.first!
+        let coopId = testCoop.id!
+        
+        print("测试coop软删除和恢复 - coopId: \(coopId)")
+        
+        // 测试软删除
+        try dbManager.softDeleteCoop(coopId: coopId)
+        
+        // 验证记录被软删除
+        let activeCoopsAfterDelete = try await dbManager.fetchActiveCoops()
+        let deletedCoops = try await dbManager.fetchDeletedCoops()
+        
+        XCTAssertFalse(activeCoopsAfterDelete.contains { $0.id == coopId }, "记录应该不在活跃列表中")
+        XCTAssertTrue(deletedCoops.contains { $0.id == coopId }, "记录应该在已删除列表中")
+        
+        // 测试恢复
+        try dbManager.restoreCoop(coopId: coopId)
+        
+        // 验证记录被恢复
+        let activeCoopsAfterRestore = try await dbManager.fetchActiveCoops()
+        let deletedCoopsAfterRestore = try await dbManager.fetchDeletedCoops()
+        
+        XCTAssertTrue(activeCoopsAfterRestore.contains { $0.id == coopId }, "记录应该被恢复到活跃列表")
+        XCTAssertFalse(deletedCoopsAfterRestore.contains { $0.id == coopId }, "记录应该不在已删除列表中")
+        
+        print("coop软删除和恢复测试通过")
+    }
+    
+    /// 测试coop的喜爱标记功能
+    func testCoopFavoriteMarking() async throws {
+        // 首先插入一个coop记录用于测试
+        let bundle = Bundle.module
+        let path = bundle.url(forResource: "CoopDetailHolder", withExtension: "json")
+        let json: JSON = JSON(parseJSON: try String(contentsOfFile: path!.path))
+        let value = json["data"]["coopHistoryDetail"]
+        
+        try dbManager.insertCoop(json: value)
+        
+        // 获取插入的coop记录
+        let coops = try await dbManager.fetchActiveCoops()
+        XCTAssertGreaterThan(coops.count, 0, "应该有至少一个coop记录")
+        
+        let testCoop = coops.first!
+        let coopId = testCoop.id!
+        
+        print("测试coop喜爱标记 - coopId: \(coopId)")
+        
+        // 测试标记为喜爱
+        try dbManager.markCoopAsFavorite(coopId: coopId)
+        
+        // 验证记录被标记为喜爱
+        let favoriteCoops = try await dbManager.fetchFavoriteCoops()
+        XCTAssertTrue(favoriteCoops.contains { $0.id == coopId }, "记录应该被标记为喜爱")
+        
+        // 测试取消喜爱标记
+        try dbManager.unmarkCoopAsFavorite(coopId: coopId)
+        
+        // 验证记录被取消喜爱标记
+        let favoriteCoopsAfterUnmark = try await dbManager.fetchFavoriteCoops()
+        XCTAssertFalse(favoriteCoopsAfterUnmark.contains { $0.id == coopId }, "记录应该被取消喜爱标记")
+        
+        print("coop喜爱标记测试通过")
+    }
+    
+    /// 测试battle的软删除和恢复功能
+    func testBattleSoftDeleteAndRestore() async throws {
+        // 首先插入一个battle记录用于测试
+        let bundle = Bundle.module
+        let path = bundle.url(forResource: "VsHistoryDetailQuery", withExtension: "json")
+        let json: JSON = JSON(parseJSON: try String(contentsOfFile: path!.path))
+        let values = json["data"]
+        
+        try dbManager.insertBattle(json: values[1])
+        
+        // 获取插入的battle记录
+        let battles = try await dbManager.fetchActiveBattles()
+        XCTAssertGreaterThan(battles.count, 0, "应该有至少一个battle记录")
+        
+        let testBattle = battles.first!
+        let battleId = testBattle.id!
+        
+        print("测试battle软删除和恢复 - battleId: \(battleId)")
+        
+        // 测试软删除
+        try dbManager.softDeleteBattle(battleId: battleId)
+        
+        // 验证记录被软删除
+        let activeBattlesAfterDelete = try await dbManager.fetchActiveBattles()
+        let deletedBattles = try await dbManager.fetchDeletedBattles()
+        
+        XCTAssertFalse(activeBattlesAfterDelete.contains { $0.id == battleId }, "记录应该不在活跃列表中")
+        XCTAssertTrue(deletedBattles.contains { $0.id == battleId }, "记录应该在已删除列表中")
+        
+        // 测试恢复
+        try dbManager.restoreBattle(battleId: battleId)
+        
+        // 验证记录被恢复
+        let activeBattlesAfterRestore = try await dbManager.fetchActiveBattles()
+        let deletedBattlesAfterRestore = try await dbManager.fetchDeletedBattles()
+        
+        XCTAssertTrue(activeBattlesAfterRestore.contains { $0.id == battleId }, "记录应该被恢复到活跃列表")
+        XCTAssertFalse(deletedBattlesAfterRestore.contains { $0.id == battleId }, "记录应该不在已删除列表中")
+        
+        print("battle软删除和恢复测试通过")
+    }
+    
+    /// 测试battle的喜爱标记功能
+    func testBattleFavoriteMarking() async throws {
+        // 首先插入一个battle记录用于测试
+        let bundle = Bundle.module
+        let path = bundle.url(forResource: "VsHistoryDetailQuery", withExtension: "json")
+        let json: JSON = JSON(parseJSON: try String(contentsOfFile: path!.path))
+        let values = json["data"]
+        
+        try dbManager.insertBattle(json: values[1])
+        
+        // 获取插入的battle记录
+        let battles = try await dbManager.fetchActiveBattles()
+        XCTAssertGreaterThan(battles.count, 0, "应该有至少一个battle记录")
+        
+        let testBattle = battles.first!
+        let battleId = testBattle.id!
+        
+        print("测试battle喜爱标记 - battleId: \(battleId)")
+        
+        // 测试标记为喜爱
+        try dbManager.markBattleAsFavorite(battleId: battleId)
+        
+        // 验证记录被标记为喜爱
+        let favoriteBattles = try await dbManager.fetchFavoriteBattles()
+        XCTAssertTrue(favoriteBattles.contains { $0.id == battleId }, "记录应该被标记为喜爱")
+        
+        // 测试取消喜爱标记
+        try dbManager.unmarkBattleAsFavorite(battleId: battleId)
+        
+        // 验证记录被取消喜爱标记
+        let favoriteBattlesAfterUnmark = try await dbManager.fetchFavoriteBattles()
+        XCTAssertFalse(favoriteBattlesAfterUnmark.contains { $0.id == battleId }, "记录应该被取消喜爱标记")
+        
+        print("battle喜爱标记测试通过")
+    }
+    
+    /// 测试永久删除软删除的记录
+    func testPermanentlyDeleteSoftDeletedRecords() async throws {
+        // 首先插入一些记录并软删除它们
+        let bundle = Bundle.module
+        let coopPath = bundle.url(forResource: "CoopDetailHolder", withExtension: "json")
+        let coopJson: JSON = JSON(parseJSON: try String(contentsOfFile: coopPath!.path))
+        let coopValue = coopJson["data"]["coopHistoryDetail"]
+        
+        let battlePath = bundle.url(forResource: "VsHistoryDetailQuery", withExtension: "json")
+        let battleJson: JSON = JSON(parseJSON: try String(contentsOfFile: battlePath!.path))
+        let battleValues = battleJson["data"]
+        
+        // 插入记录
+        try dbManager.insertCoop(json: coopValue)
+        try dbManager.insertBattle(json: battleValues[1])
+        
+        // 获取记录并软删除
+        let coops = try await dbManager.fetchActiveCoops()
+        let battles = try await dbManager.fetchActiveBattles()
+        
+        if let coop = coops.first {
+            try dbManager.softDeleteCoop(coopId: coop.id!)
+        }
+        
+        if let battle = battles.first {
+            try dbManager.softDeleteBattle(battleId: battle.id!)
+        }
+        
+        // 验证软删除的记录存在
+        let deletedCoops = try await dbManager.fetchDeletedCoops()
+        let deletedBattles = try await dbManager.fetchDeletedBattles()
+        
+        let hasDeletedCoop = coops.first != nil && deletedCoops.count > 0
+        let hasDeletedBattle = battles.first != nil && deletedBattles.count > 0
+        
+        print("软删除前 - 已删除coop: \(deletedCoops.count), 已删除battle: \(deletedBattles.count)")
+        
+        // 永久删除软删除的记录
+        if hasDeletedCoop {
+            try dbManager.permanentlyDeleteSoftDeletedCoops()
+        }
+        if hasDeletedBattle {
+            try dbManager.permanentlyDeleteSoftDeletedBattles()
+        }
+        
+        // 验证记录被永久删除
+        let deletedCoopsAfterPermanent = try await dbManager.fetchDeletedCoops()
+        let deletedBattlesAfterPermanent = try await dbManager.fetchDeletedBattles()
+        
+        XCTAssertEqual(deletedCoopsAfterPermanent.count, 0, "所有软删除的coop记录应该被永久删除")
+        XCTAssertEqual(deletedBattlesAfterPermanent.count, 0, "所有软删除的battle记录应该被永久删除")
+        
+        print("永久删除软删除记录测试通过")
+    }
+    
+    /// 测试查询方法是否正确过滤软删除的记录
+    func testQueryMethodsFilterSoftDeletedRecords() async throws {
+        // 插入测试数据
+        let bundle = Bundle.module
+        let coopPath = bundle.url(forResource: "CoopDetailHolder", withExtension: "json")
+        let coopJson: JSON = JSON(parseJSON: try String(contentsOfFile: coopPath!.path))
+        let coopValue = coopJson["data"]["coopHistoryDetail"]
+        
+        let battlePath = bundle.url(forResource: "VsHistoryDetailQuery", withExtension: "json")
+        let battleJson: JSON = JSON(parseJSON: try String(contentsOfFile: battlePath!.path))
+        let battleValues = battleJson["data"]
+        
+        try dbManager.insertCoop(json: coopValue)
+        try dbManager.insertBattle(json: battleValues[1])
+        
+        // 获取记录
+        let coops = try await dbManager.fetchActiveCoops()
+        let battles = try await dbManager.fetchActiveBattles()
+        
+        XCTAssertGreaterThan(coops.count, 0, "应该有活跃的coop记录")
+        XCTAssertGreaterThan(battles.count, 0, "应该有活跃的battle记录")
+        
+        // 软删除一些记录
+        if let coop = coops.first {
+            try dbManager.softDeleteCoop(coopId: coop.id!)
+        }
+        if let battle = battles.first {
+            try dbManager.softDeleteBattle(battleId: battle.id!)
+        }
+        
+        // 验证查询方法正确过滤
+        let activeCoopsAfterDelete = try await dbManager.fetchActiveCoops()
+        let activeBattlesAfterDelete = try await dbManager.fetchActiveBattles()
+        let deletedCoops = try await dbManager.fetchDeletedCoops()
+        let deletedBattles = try await dbManager.fetchDeletedBattles()
+        
+        XCTAssertLessThan(activeCoopsAfterDelete.count, coops.count, "活跃coop记录应该减少")
+        XCTAssertLessThan(activeBattlesAfterDelete.count, battles.count, "活跃battle记录应该减少")
+        XCTAssertGreaterThan(deletedCoops.count, 0, "应该有已删除的coop记录")
+        XCTAssertGreaterThan(deletedBattles.count, 0, "应该有已删除的battle记录")
+        
+        print("查询方法过滤测试通过")
+    }
 
 }
 

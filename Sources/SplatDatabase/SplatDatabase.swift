@@ -315,6 +315,41 @@ public class SplatDatabase {
     migrator.registerMigration("insertImageMapForVersion1000") { db in
         try self.updateImageMap(db: db)
     }
+    
+    migrator.registerMigration("addSoftDeleteAndFavoriteColumns") { db in
+        // 为coop表添加软删除和喜爱标记列
+        let coopColumns = try db.columns(in: "coop")
+        if !coopColumns.contains(where: { $0.name == "isDeleted" }) {
+            try db.alter(table: "coop") { t in
+                t.add(column: "isDeleted", .boolean).notNull().defaults(to: false)
+            }
+        }
+        if !coopColumns.contains(where: { $0.name == "isFavorite" }) {
+            try db.alter(table: "coop") { t in
+                t.add(column: "isFavorite", .boolean).notNull().defaults(to: false)
+            }
+        }
+        
+        // 为battle表添加软删除和喜爱标记列
+        let battleColumns = try db.columns(in: "battle")
+        if !battleColumns.contains(where: { $0.name == "isDeleted" }) {
+            try db.alter(table: "battle") { t in
+                t.add(column: "isDeleted", .boolean).notNull().defaults(to: false)
+            }
+        }
+        if !battleColumns.contains(where: { $0.name == "isFavorite" }) {
+            try db.alter(table: "battle") { t in
+                t.add(column: "isFavorite", .boolean).notNull().defaults(to: false)
+            }
+        }
+        
+        // 为软删除列创建索引以提高查询性能
+        try db.execute(sql: "CREATE INDEX IF NOT EXISTS idx_coop_isDeleted ON coop (isDeleted)")
+        try db.execute(sql: "CREATE INDEX IF NOT EXISTS idx_coop_isFavorite ON coop (isFavorite)")
+        try db.execute(sql: "CREATE INDEX IF NOT EXISTS idx_battle_isDeleted ON battle (isDeleted)")
+        try db.execute(sql: "CREATE INDEX IF NOT EXISTS idx_battle_isFavorite ON battle (isFavorite)")
+    }
+    
     return migrator
     
     

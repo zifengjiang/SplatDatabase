@@ -35,6 +35,8 @@ public struct Battle:Codable, FetchableRecord, PersistableRecord{
     public var myFestPower:Int?
     public var awards:String
     public var accountId:Int64
+    public var isDeleted:Bool
+    public var isFavorite:Bool
 
     // MARK: Computed
     public var teams:[VsTeam] = []
@@ -42,7 +44,7 @@ public struct Battle:Codable, FetchableRecord, PersistableRecord{
 
     enum CodingKeys: String, CodingKey {
         case sp3PrincipalId, mode, rule, stageId, playedTime, duration, judgement, knockout, udemae, preDetailId
-        case earnedUdemaePoint, bankaraMode, bankaraPower, leagueMatchEventId, myLeaguePower, lastXPower, entireXPower, festDragonMatchType, festContribution, festJewel, myFestPower, awards, accountId
+        case earnedUdemaePoint, bankaraMode, bankaraPower, leagueMatchEventId, myLeaguePower, lastXPower, entireXPower, festDragonMatchType, festContribution, festJewel, myFestPower, awards, accountId, isDeleted, isFavorite
     }
 
     public init(json:JSON, db:Database){
@@ -78,6 +80,8 @@ public struct Battle:Codable, FetchableRecord, PersistableRecord{
         
         self.awards = json["awards"].arrayValue.map({"\($0["name"].stringValue)_\($0["rank"].stringValue)"}).joined(separator: ",")
         self.accountId = getAccountId(by: json["id"].stringValue.extractUserId(), db: db)
+        self.isDeleted = false
+        self.isFavorite = false
     }
 }
 
@@ -216,6 +220,123 @@ extension SplatDatabase {
             for battleId in battleIds {
                 try deleteBattle(battleId: battleId, db: db)
             }
+        }
+    }
+    
+    // MARK: - Soft Delete Methods
+    
+    /// 软删除指定的battle记录（标记为已删除）
+    /// - Parameter battleId: battle记录的ID
+    public func softDeleteBattle(battleId: Int64) throws {
+        try dbQueue.write { db in
+            try db.execute(sql: "UPDATE battle SET isDeleted = ? WHERE id = ?", arguments: [true, battleId])
+        }
+    }
+    
+    /// 软删除指定的battle记录（通过sp3PrincipalId）
+    /// - Parameter sp3PrincipalId: battle记录的sp3PrincipalId
+    public func softDeleteBattle(sp3PrincipalId: String) throws {
+        try dbQueue.write { db in
+            try db.execute(sql: "UPDATE battle SET isDeleted = ? WHERE sp3PrincipalId = ?", arguments: [true, sp3PrincipalId])
+        }
+    }
+    
+    /// 恢复软删除的battle记录
+    /// - Parameter battleId: battle记录的ID
+    public func restoreBattle(battleId: Int64) throws {
+        try dbQueue.write { db in
+            try db.execute(sql: "UPDATE battle SET isDeleted = ? WHERE id = ?", arguments: [false, battleId])
+        }
+    }
+    
+    /// 恢复软删除的battle记录（通过sp3PrincipalId）
+    /// - Parameter sp3PrincipalId: battle记录的sp3PrincipalId
+    public func restoreBattle(sp3PrincipalId: String) throws {
+        try dbQueue.write { db in
+            try db.execute(sql: "UPDATE battle SET isDeleted = ? WHERE sp3PrincipalId = ?", arguments: [false, sp3PrincipalId])
+        }
+    }
+    
+    /// 永久删除所有已软删除的battle记录
+    public func permanentlyDeleteSoftDeletedBattles() throws {
+        try dbQueue.write { db in
+            let softDeletedBattleIds = try Int64.fetchAll(db, sql: "SELECT id FROM battle WHERE isDeleted = ?", arguments: [true])
+            for battleId in softDeletedBattleIds {
+                try deleteBattle(battleId: battleId, db: db)
+            }
+        }
+    }
+    
+    // MARK: - Favorite Methods
+    
+    /// 标记battle记录为喜爱
+    /// - Parameter battleId: battle记录的ID
+    public func markBattleAsFavorite(battleId: Int64) throws {
+        try dbQueue.write { db in
+            try db.execute(sql: "UPDATE battle SET isFavorite = ? WHERE id = ?", arguments: [true, battleId])
+        }
+    }
+    
+    /// 标记battle记录为喜爱（通过sp3PrincipalId）
+    /// - Parameter sp3PrincipalId: battle记录的sp3PrincipalId
+    public func markBattleAsFavorite(sp3PrincipalId: String) throws {
+        try dbQueue.write { db in
+            try db.execute(sql: "UPDATE battle SET isFavorite = ? WHERE sp3PrincipalId = ?", arguments: [true, sp3PrincipalId])
+        }
+    }
+    
+    /// 取消battle记录的喜爱标记
+    /// - Parameter battleId: battle记录的ID
+    public func unmarkBattleAsFavorite(battleId: Int64) throws {
+        try dbQueue.write { db in
+            try db.execute(sql: "UPDATE battle SET isFavorite = ? WHERE id = ?", arguments: [false, battleId])
+        }
+    }
+    
+    /// 取消battle记录的喜爱标记（通过sp3PrincipalId）
+    /// - Parameter sp3PrincipalId: battle记录的sp3PrincipalId
+    public func unmarkBattleAsFavorite(sp3PrincipalId: String) throws {
+        try dbQueue.write { db in
+            try db.execute(sql: "UPDATE battle SET isFavorite = ? WHERE sp3PrincipalId = ?", arguments: [false, sp3PrincipalId])
+        }
+    }
+    
+    // MARK: - Query Methods
+    
+    /// 获取所有未删除的battle记录
+    public func fetchActiveBattles() async throws -> [Battle] {
+        return try await dbQueue.read { db in
+            try Battle.filter(Column("isDeleted") == false).fetchAll(db)
+        }
+    }
+    
+    /// 获取所有已删除的battle记录
+    public func fetchDeletedBattles() async throws -> [Battle] {
+        return try await dbQueue.read { db in
+            try Battle.filter(Column("isDeleted") == true).fetchAll(db)
+        }
+    }
+    
+    /// 获取所有喜爱的battle记录
+    public func fetchFavoriteBattles() async throws -> [Battle] {
+        return try await dbQueue.read { db in
+            try Battle.filter(Column("isFavorite") == true && Column("isDeleted") == false).fetchAll(db)
+        }
+    }
+    
+    /// 按账户ID获取未删除的battle记录
+    /// - Parameter accountId: 账户ID
+    public func fetchActiveBattles(accountId: Int64) async throws -> [Battle] {
+        return try await dbQueue.read { db in
+            try Battle.filter(Column("accountId") == accountId && Column("isDeleted") == false).fetchAll(db)
+        }
+    }
+    
+    /// 按账户ID获取喜爱的battle记录
+    /// - Parameter accountId: 账户ID
+    public func fetchFavoriteBattles(accountId: Int64) async throws -> [Battle] {
+        return try await dbQueue.read { db in
+            try Battle.filter(Column("accountId") == accountId && Column("isFavorite") == true && Column("isDeleted") == false).fetchAll(db)
         }
     }
 }
