@@ -350,6 +350,76 @@ public class SplatDatabase {
         try db.execute(sql: "CREATE INDEX IF NOT EXISTS idx_battle_isFavorite ON battle (isFavorite)")
     }
     
+    migrator.registerMigration("updateViewsWithIsDeletedFilter") { db in
+        // 删除现有的视图
+        try db.execute(sql: "DROP VIEW IF EXISTS battle_view")
+        try db.execute(sql: "DROP VIEW IF EXISTS coop_view")
+        
+        // 重新创建 battle_view isDeleted 过滤条件
+        let battle_view = """
+        CREATE VIEW battle_view AS
+        WITH OrderedBattle AS (
+        SELECT
+        b.*,
+        DATE(b.playedTime, 'localtime') AS dayKey_local,
+        LAG(b.mode) OVER (
+            PARTITION BY b.accountId
+            ORDER BY b.playedTime, b.id
+        ) AS prev_mode,
+        LAG(DATE(b.playedTime, 'localtime')) OVER (
+            PARTITION BY b.accountId
+            ORDER BY b.playedTime, b.id
+        ) AS prev_dayKey_local
+        FROM battle AS b
+        ),
+        GroupingBattle AS (
+        SELECT
+        *,
+        CASE
+            WHEN mode = prev_mode AND dayKey_local = prev_dayKey_local THEN 0
+            ELSE 1
+        END AS is_new_group
+        FROM OrderedBattle
+        )
+        SELECT
+        *,
+        SUM(is_new_group) OVER (
+        PARTITION BY accountId
+        ORDER BY playedTime, id
+        ) AS GroupID
+        FROM GroupingBattle
+        WHERE isDeleted = 0
+        """
+        try db.execute(sql: battle_view)
+        
+        // 重新创建 coop_group_status_view，添加 isDeleted 过滤条件
+        let coop_view = """
+        CREATE VIEW coop_view AS
+        WITH OrderedCoop AS (
+            SELECT *,
+                LAG(rule) OVER (PARTITION BY accountId ORDER BY playedTime) AS prev_rule,
+                LAG(stageId) OVER (PARTITION BY accountId ORDER BY playedTime) AS prev_stageId,
+                LAG(suppliedWeapon) OVER (PARTITION BY accountId ORDER BY playedTime) AS prev_suppliedWeapon
+            FROM coop
+        ),
+        GroupingCoop AS (
+            SELECT *,
+                CASE
+                    WHEN rule = prev_rule AND stageId = prev_stageId AND suppliedWeapon = prev_suppliedWeapon THEN 0
+
+                        WHEN rule = prev_rule AND rule = 'BIG_RUN' AND suppliedWeapon = prev_suppliedWeapon THEN 0
+                    ELSE 1
+                END AS is_new_group
+            FROM OrderedCoop
+        )
+        SELECT *,
+            SUM(is_new_group) OVER (PARTITION BY accountId ORDER BY playedTime) AS GroupID
+        FROM GroupingCoop
+        WHERE isDeleted = 0
+        """
+        try db.execute(sql: coop_view)
+    }
+    
     return migrator
     
     
