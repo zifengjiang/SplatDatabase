@@ -159,7 +159,7 @@ public class SplatDatabase {
             try db.execute(sql: "CREATE INDEX idx_player_coopPlayerResultId ON player(coopPlayerResultId);")
         }
 
-        migrator.registerMigration("fixTriumvirateIssue") { db in
+        migrator.registerMigration("fixTriumvirateIssue1") { db in
             try I18n(key: "Q29vcEVuZW15LTMw", translations: ["zhCN": "头目联合", "zhTW": "頭目聯合", "en": "Triumvirate", "ja": "トリアムバレイト", "ko": "트리엄버레이트", "ru": "Триумвирейт", "fr": "Triumvirat", "de": "Triumvirat", "es": "Triunvirato", "it": "Triumvirato", "nl": "Triumviraat"]).insert(db, onConflict: .ignore)
             // Update
             try db.execute(sql: """
