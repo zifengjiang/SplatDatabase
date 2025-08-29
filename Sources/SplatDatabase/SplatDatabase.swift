@@ -350,7 +350,7 @@ public class SplatDatabase {
         try db.execute(sql: "CREATE INDEX IF NOT EXISTS idx_battle_isFavorite ON battle (isFavorite)")
     }
     
-    migrator.registerMigration("updateViewsWithIsDeletedFilter") { db in
+    migrator.registerMigration("updateViewsWithIsDeletedFilter1") { db in
         // 删除现有的视图
         try db.execute(sql: "DROP VIEW IF EXISTS battle_view")
         try db.execute(sql: "DROP VIEW IF EXISTS coop_view")
@@ -371,6 +371,7 @@ public class SplatDatabase {
             ORDER BY b.playedTime, b.id
         ) AS prev_dayKey_local
         FROM battle AS b
+        WHERE b.isDeleted = 0
         ),
         GroupingBattle AS (
         SELECT
@@ -380,6 +381,7 @@ public class SplatDatabase {
             ELSE 1
         END AS is_new_group
         FROM OrderedBattle
+        WHERE isDeleted = 0
         )
         SELECT
         *,
@@ -401,6 +403,7 @@ public class SplatDatabase {
                 LAG(stageId) OVER (PARTITION BY accountId ORDER BY playedTime) AS prev_stageId,
                 LAG(suppliedWeapon) OVER (PARTITION BY accountId ORDER BY playedTime) AS prev_suppliedWeapon
             FROM coop
+            WHERE isDeleted = 0
         ),
         GroupingCoop AS (
             SELECT *,
@@ -411,6 +414,7 @@ public class SplatDatabase {
                     ELSE 1
                 END AS is_new_group
             FROM OrderedCoop
+            WHERE isDeleted = 0
         )
         SELECT *,
             SUM(is_new_group) OVER (PARTITION BY accountId ORDER BY playedTime) AS GroupID
@@ -419,6 +423,7 @@ public class SplatDatabase {
         """
         try db.execute(sql: coop_view)
     }
+    
     
     return migrator
     
