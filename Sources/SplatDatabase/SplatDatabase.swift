@@ -350,7 +350,7 @@ public class SplatDatabase {
         try db.execute(sql: "CREATE INDEX IF NOT EXISTS idx_battle_isFavorite ON battle (isFavorite)")
     }
     
-    migrator.registerMigration("updateViewsWithIsDeletedFilter1") { db in
+    migrator.registerMigration("updateViewsWithIsDeletedFilter2") { db in
         // 删除现有的视图
         try db.execute(sql: "DROP VIEW IF EXISTS battle_view")
         try db.execute(sql: "DROP VIEW IF EXISTS coop_view")
@@ -381,7 +381,7 @@ public class SplatDatabase {
             ELSE 1
         END AS is_new_group
         FROM OrderedBattle
-        WHERE isDeleted = 0
+
         )
         SELECT
         *,
@@ -390,7 +390,6 @@ public class SplatDatabase {
         ORDER BY playedTime, id
         ) AS GroupID
         FROM GroupingBattle
-        WHERE isDeleted = 0
         """
         try db.execute(sql: battle_view)
         
@@ -414,14 +413,34 @@ public class SplatDatabase {
                     ELSE 1
                 END AS is_new_group
             FROM OrderedCoop
-            WHERE isDeleted = 0
         )
         SELECT *,
             SUM(is_new_group) OVER (PARTITION BY accountId ORDER BY playedTime) AS GroupID
         FROM GroupingCoop
-        WHERE isDeleted = 0
         """
         try db.execute(sql: coop_view)
+    }
+
+    migrator.registerMigration("createIndexForIsDeleted") { db in
+        let sql = """
+        CREATE INDEX IF NOT EXISTS idx_battle_acc_time_id__alive
+        ON "battle"("accountId", "playedTime", "id")
+        WHERE "isDeleted" = 0;
+
+        CREATE INDEX IF NOT EXISTS idx_coop_acc_rule_stage_weapon_time__alive
+        ON "coop"("accountId", "rule", "stageId", "suppliedWeapon", "playedTime")
+        WHERE "isDeleted" = 0;
+
+        CREATE INDEX IF NOT EXISTS idx_vsteam_battleId
+        ON "vsTeam"("battleId");
+
+        CREATE INDEX IF NOT EXISTS idx_player_vsTeam_self_vs
+        ON "player"("vsTeamId", "isMyself", "isCoop");
+
+        CREATE INDEX IF NOT EXISTS idx_coopPlayerResult_coop_order
+        ON "coopPlayerResult"("coopId", "order");
+        """
+        try db.execute(sql: sql)
     }
     
     
