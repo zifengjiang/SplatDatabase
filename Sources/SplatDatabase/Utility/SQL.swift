@@ -179,7 +179,7 @@ let last_500_coop_sql = """
             0
         END AS result
     FROM
-        coop
+        coop_view as coop
     WHERE
         coop.accountId = ?
     ORDER BY
@@ -195,7 +195,7 @@ let last_500_battle_sql = """
             NULL
         END AS result
     FROM
-        battle
+        battle_view as battle
     WHERE
         battle.accountId = ? AND battle.'mode' != 'PRIVATE'
     ORDER BY
