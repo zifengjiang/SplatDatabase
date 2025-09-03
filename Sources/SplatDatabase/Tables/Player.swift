@@ -16,6 +16,7 @@ public struct Player: Codable, FetchableRecord, PersistableRecord {
     public var species: Bool
     public var nameplate: PackableNumbers
     public var nameplateTextColor: PackableNumbers
+    public var bynameFormatted: PackableNumbers? // [adjective_id, subject_id, male_flag]
 
     // MARK: - Coop Attributes
     public var uniformId: UInt16?
@@ -56,6 +57,7 @@ public struct Player: Codable, FetchableRecord, PersistableRecord {
         case species
         case nameplate
         case nameplateTextColor
+        case bynameFormatted
         case uniformId
         case paint
         case weapon
@@ -82,6 +84,7 @@ public struct Player: Codable, FetchableRecord, PersistableRecord {
     public var _clothingGear:Gear? = nil
     public var _shoesGear:Gear? = nil
     public var _weapon: Weapon? = nil
+    public var _bynameFormatted: FormattedByname? = nil
 
     // MARK: - init from json
     public init(json: JSON, vsTeamId: Int64? = nil, coopPlayerResultId: Int64? = nil, db:Database) {
@@ -100,6 +103,16 @@ public struct Player: Codable, FetchableRecord, PersistableRecord {
         self.nameplate = PackableNumbers([nameplateBackground,]+nameplateBadges)
 
         self.nameplateTextColor = json["nameplate"]["background"]["textColor"].dictionaryValue.toRGBPackableNumbers()
+
+        // Parse byname and store formatted version
+        if let formatted = formatBynameSync(self.byname) {
+            let adjectiveId = getI18nId(by: formatted.adjective, db: db) ?? 0
+            let subjectId = getI18nId(by: formatted.subject, db: db) ?? 0
+            let maleFlag: UInt16 = formatted.male == nil ? 0 : (formatted.male! ? 1 : 2)
+            self.bynameFormatted = PackableNumbers([adjectiveId, subjectId, maleFlag])
+        } else {
+            self.bynameFormatted = nil
+        }
 
         if coopPlayerResultId != nil{
             self.uniformId = getImageId(for:json["uniform"]["id"].string, db: db)
@@ -123,7 +136,6 @@ public struct Player: Codable, FetchableRecord, PersistableRecord {
         self.kill = json["result"]["kill"].int
         self.death = json["result"]["death"].int
         self.assist = json["result"]["assist"].int
-        self.special = json["result"]["special"].int
         self.special = json["result"]["special"].int
 
         self.isCoop = self.uniformId != nil
@@ -159,6 +171,9 @@ extension Player: PreComputable {
             let uniform = try ImageMap.fetchOne(db, key: rows[index].uniformId)
             rows[index].uniformName = uniform?.name
             rows[index]._nameplate = .init(nameplate: rows[index].nameplate, textColor: rows[index].nameplateTextColor, db: db)
+            if let bynameFormatted = rows[index].bynameFormatted {
+                rows[index]._bynameFormatted = .init(with: bynameFormatted, db: db)
+            }
             if !rows[index].isCoop{
                 rows[index]._headGear  = .init(gear: rows[index].headGear, db: db)
                 rows[index]._clothingGear  = .init(gear: rows[index].clothingGear, db: db)
@@ -180,6 +195,9 @@ extension Player: PreComputable {
         if var row = row {
             row.uniformName = try ImageMap.fetchOne(db, key: row.uniformId)?.name
             row._nameplate = .init(nameplate: row.nameplate, textColor: row.nameplateTextColor, db: db)
+            if let bynameFormatted = row.bynameFormatted {
+                row._bynameFormatted = .init(with: bynameFormatted, db: db)
+            }
             if !row.isCoop{
                 row._headGear  = .init(gear: row.headGear, db: db)
                 row._clothingGear  = .init(gear: row.clothingGear, db: db)
@@ -241,6 +259,42 @@ public struct Gear {
                 return nil
             }
             return additionalPowerRow.name
+        }
+    }
+}
+
+public struct FormattedByname {
+    public let adjective: String
+    public let subject: String
+    public let male: Bool?
+    
+    public init(with bynameFormatted: PackableNumbers, db: Database) {
+        let adjectiveId = bynameFormatted[0]
+        let subjectId = bynameFormatted[1]
+        let maleFlag = bynameFormatted[2]
+        
+        // Fetch adjective from i18n table
+        if let adjectiveRow = try? Row.fetchOne(db, sql: "SELECT key FROM i18n WHERE id = ?", arguments: [adjectiveId]) {
+            self.adjective = adjectiveRow["key"]
+        } else {
+            self.adjective = ""
+        }
+        
+        // Fetch subject from i18n table
+        if let subjectRow = try? Row.fetchOne(db, sql: "SELECT key FROM i18n WHERE id = ?", arguments: [subjectId]) {
+            self.subject = subjectRow["key"]
+        } else {
+            self.subject = ""
+        }
+        
+        // Parse male flag: 0 = nil, 1 = true, 2 = false
+        switch maleFlag {
+        case 1:
+            self.male = true
+        case 2:
+            self.male = false
+        default:
+            self.male = nil
         }
     }
 }

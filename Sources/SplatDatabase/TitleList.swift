@@ -16,6 +16,10 @@ class TitleList {
 
 
 public func formatByname(_ byname: String) async -> (adjective: String, subject:String, male:Bool?)? {
+    return formatBynameSync(byname)
+}
+
+public func formatBynameSync(_ byname: String) -> (adjective: String, subject:String, male:Bool?)? {
     let titleList = TitleList.shared.titleList
     var tags: [(adjective: String, id: String, index: Int)] = []
     var adjectives = titleList["adjectives"]

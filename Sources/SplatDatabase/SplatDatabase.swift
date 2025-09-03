@@ -443,6 +443,34 @@ public class SplatDatabase {
         try db.execute(sql: sql)
     }
     
+    migrator.registerMigration("addBynameFormattedColumn") { db in
+        // Check if the column already exists
+        let columns = try db.columns(in: "player")
+        if !columns.contains(where: { $0.name == "bynameFormatted" }) {
+            try db.alter(table: "player") { t in
+                t.add(column: "bynameFormatted", .integer)
+            }
+        }
+        
+        // Update existing records with formatted byname data
+        let players = try Row.fetchAll(db, sql: "SELECT id, byname FROM player")
+        
+        for player in players {
+            let playerId: Int64 = player["id"]
+            let byname: String = player["byname"]
+            
+            if let formatted = formatBynameSync(byname) {
+                let adjectiveId = getI18nId(by: formatted.adjective, db: db) ?? 0
+                let subjectId = getI18nId(by: formatted.subject, db: db) ?? 0
+                let maleFlag: UInt16 = formatted.male == nil ? 0 : (formatted.male! ? 1 : 2)
+                let bynameFormatted = PackableNumbers([adjectiveId, subjectId, maleFlag])
+                
+                try db.execute(sql: "UPDATE player SET bynameFormatted = ? WHERE id = ?", 
+                              arguments: [bynameFormatted.databaseValue, playerId])
+            }
+        }
+    }
+    
     
     return migrator
     
@@ -631,6 +659,7 @@ public class SplatDatabase {
             t.column("species", .boolean).notNull() // true for octoling, false for inkling
             t.column("nameplate", .integer).notNull()
             t.column("nameplateTextColor", .integer).notNull()
+            t.column("bynameFormatted", .integer) // PackableNumbers: [adjective_id, subject_id, male_flag]
 
                 /// Coop Attributes
             t.column("uniformId", .integer).references("imageMap",column: "id")
