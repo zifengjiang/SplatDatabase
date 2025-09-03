@@ -146,6 +146,7 @@ let coop_player_status_sql = """
     SELECT
         name,
         byname,
+        bynameFormatted,
         nameId,
         nameplate,
         nameplateTextColor,

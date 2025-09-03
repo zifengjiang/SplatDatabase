@@ -452,23 +452,23 @@ public class SplatDatabase {
             }
         }
         
-        // Update existing records with formatted byname data
-        let players = try Row.fetchAll(db, sql: "SELECT id, byname FROM player")
+        // // Update existing records with formatted byname data
+        // let players = try Row.fetchAll(db, sql: "SELECT id, byname FROM player")
         
-        for player in players {
-            let playerId: Int64 = player["id"]
-            let byname: String = player["byname"]
+        // for player in players {
+        //     let playerId: Int64 = player["id"]
+        //     let byname: String = player["byname"]
             
-            if let formatted = formatBynameSync(byname) {
-                let adjectiveId = getI18nId(by: formatted.adjective, db: db) ?? 0
-                let subjectId = getI18nId(by: formatted.subject, db: db) ?? 0
-                let maleFlag: UInt16 = formatted.male == nil ? 0 : (formatted.male! ? 1 : 2)
-                let bynameFormatted = PackableNumbers([adjectiveId, subjectId, maleFlag])
+        //     if let formatted = formatBynameSync(byname) {
+        //         let adjectiveId = getI18nId(by: formatted.adjective, db: db) ?? 0
+        //         let subjectId = getI18nId(by: formatted.subject, db: db) ?? 0
+        //         let maleFlag: UInt16 = formatted.male == nil ? 0 : (formatted.male! ? 1 : 2)
+        //         let bynameFormatted = PackableNumbers([adjectiveId, subjectId, maleFlag])
                 
-                try db.execute(sql: "UPDATE player SET bynameFormatted = ? WHERE id = ?", 
-                              arguments: [bynameFormatted.databaseValue, playerId])
-            }
-        }
+        //         try db.execute(sql: "UPDATE player SET bynameFormatted = ? WHERE id = ?", 
+        //                       arguments: [bynameFormatted.databaseValue, playerId])
+        //     }
+        // }
     }
     
     
