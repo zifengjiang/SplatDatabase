@@ -451,7 +451,7 @@ public class SplatDatabase {
             SET isMyself = (
                 CASE 
                     WHEN isCoop = 1 AND coopPlayerResultId IS NOT NULL THEN
-                        (SELECT CASE WHEN cpr.order = 0 THEN 1 ELSE 0 END 
+                        (SELECT CASE WHEN cpr.'order' = 0 THEN 1 ELSE 0 END 
                          FROM coopPlayerResult cpr 
                          WHERE cpr.id = player.coopPlayerResultId)
                     WHEN isCoop = 0 THEN isMyself
