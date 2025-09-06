@@ -443,32 +443,23 @@ public class SplatDatabase {
         try db.execute(sql: sql)
     }
     
-    migrator.registerMigration("addBynameFormattedColumn") { db in
-        // Check if the column already exists
-        let columns = try db.columns(in: "player")
-        if !columns.contains(where: { $0.name == "bynameFormatted" }) {
-            try db.alter(table: "player") { t in
-                t.add(column: "bynameFormatted", .integer)
-            }
-        }
-        
-        // // Update existing records with formatted byname data
-        // let players = try Row.fetchAll(db, sql: "SELECT id, byname FROM player")
-        
-        // for player in players {
-        //     let playerId: Int64 = player["id"]
-        //     let byname: String = player["byname"]
-            
-        //     if let formatted = formatBynameSync(byname) {
-        //         let adjectiveId = getI18nId(by: formatted.adjective, db: db) ?? 0
-        //         let subjectId = getI18nId(by: formatted.subject, db: db) ?? 0
-        //         let maleFlag: UInt16 = formatted.male == nil ? 0 : (formatted.male! ? 1 : 2)
-        //         let bynameFormatted = PackableNumbers([adjectiveId, subjectId, maleFlag])
-                
-        //         try db.execute(sql: "UPDATE player SET bynameFormatted = ? WHERE id = ?", 
-        //                       arguments: [bynameFormatted.databaseValue, playerId])
-        //     }
-        // }
+    migrator.registerMigration("updateIsMyselfLogic") { db in
+        // 更新合作模式下的 isMyself 字段逻辑
+        // 对于合作模式（isCoop = 1）的玩家，如果 order = 0 则 isMyself = 1，否则为 0
+        try db.execute(sql: """
+            UPDATE player 
+            SET isMyself = (
+                CASE 
+                    WHEN isCoop = 1 AND coopPlayerResultId IS NOT NULL THEN
+                        (SELECT CASE WHEN cpr.order = 0 THEN 1 ELSE 0 END 
+                         FROM coopPlayerResult cpr 
+                         WHERE cpr.id = player.coopPlayerResultId)
+                    WHEN isCoop = 0 THEN isMyself
+                    ELSE 0
+                END
+            )
+            WHERE isCoop = 1 AND coopPlayerResultId IS NOT NULL
+        """)
     }
     
     

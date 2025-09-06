@@ -118,6 +118,8 @@ public struct Player: Codable, FetchableRecord, PersistableRecord {
             self.uniformId = getImageId(for:json["uniform"]["id"].string, db: db)
         }
 
+        self.isCoop = self.uniformId != nil
+
         self.paint = json["paint"].int
         if vsTeamId != nil{
             let weaponId = getImageId(for: json["weapon"]["id"].string,db: db)
@@ -131,14 +133,15 @@ public struct Player: Codable, FetchableRecord, PersistableRecord {
         self.crown = json["crown"].bool
         self.festDragonCert = json["festDragonCert"].string
         self.festGrade = json["festGrade"].string
-        self.isMyself = json["isMyself"].bool
+        self.isMyself = self.isCoop ? 
+            (coopPlayerResultId != nil ? (try? CoopPlayerResult.fetchOne(db, key: coopPlayerResultId)?.order == 0) ?? false : false) : 
+            json["isMyself"].bool
 
         self.kill = json["result"]["kill"].int
         self.death = json["result"]["death"].int
         self.assist = json["result"]["assist"].int
         self.special = json["result"]["special"].int
-
-        self.isCoop = self.uniformId != nil
+        
     }
 }
 
