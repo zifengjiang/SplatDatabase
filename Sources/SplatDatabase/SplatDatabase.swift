@@ -463,7 +463,16 @@ public class SplatDatabase {
     }
     
     
+    
+    migrator.registerMigration("insertI18nForVersion1010") { db in
+        try self.updateI18n(db: db)
+    }
+
+    migrator.registerMigration("insertImageMapForVersion1010") { db in
+        try self.updateImageMap(db: db)
+    }
     return migrator
+    
     
     
 
