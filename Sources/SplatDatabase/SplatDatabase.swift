@@ -461,6 +461,210 @@ public class SplatDatabase {
             WHERE isCoop = 1 AND coopPlayerResultId IS NOT NULL
         """)
     }
+
+    migrator.registerMigration("updateCoopView") { db in
+        let sql = """
+        DROP VIEW IF EXISTS coop_view;
+
+        CREATE VIEW coop_view AS
+        WITH RECURSIVE
+        ranked AS (
+        SELECT
+            c.*,
+            ROW_NUMBER() OVER (
+            PARTITION BY c.accountId
+            ORDER BY c.playedTime, c.id
+            ) AS rn
+        FROM coop c
+        WHERE c.isDeleted = 0
+        ),
+        /* 递归推进：同时维护
+        - last_team_time  : 最近一次 TEAM_CONTEST 的时间
+        - last_team_gid   : 最近一次 TEAM_CONTEST 所属组号
+        - last_reg_time/last_reg_stage/last_reg_weapon/last_reg_gid : 最近一次 REGULAR 的锚点
+        - gid             : “下一次新组”将使用的编号
+        - last_valid_gid  : 最近一次有效(非 -1)组号，供其它模式继承
+        */
+        walk AS (
+        -- 基线
+        SELECT
+            r.*,
+            1 AS group_id,
+            1 AS gid,
+            1 AS last_valid_gid,
+
+            CASE WHEN r.rule = 'TEAM_CONTEST' THEN r.playedTime END AS last_team_time,
+            CASE WHEN r.rule = 'TEAM_CONTEST' THEN 1               END AS last_team_gid,
+
+            CASE WHEN r.rule = 'REGULAR' THEN r.playedTime     END AS last_reg_time,
+            CASE WHEN r.rule = 'REGULAR' THEN r.stageId        END AS last_reg_stage,
+            CASE WHEN r.rule = 'REGULAR' THEN r.suppliedWeapon END AS last_reg_weapon,
+            CASE WHEN r.rule = 'REGULAR' THEN 1                END AS last_reg_gid
+        FROM ranked r
+        WHERE r.rn = 1
+
+        UNION ALL
+
+        -- 递推
+        SELECT
+            r.*,
+
+            /* 组号：TEAM_CONTEST/REGULAR 走 48h 规则，BIG_RUN 总是新开，其它继承 */
+            /* 注意：这里我们不把 “-1/1” 写进 GroupID，避免影响聚合；-1/1 会单独写入 reg_flag */
+            CASE
+            WHEN r.rule = 'TEAM_CONTEST' THEN
+                CASE
+                WHEN w.last_team_time IS NOT NULL
+                AND (julianday(r.playedTime) - julianday(w.last_team_time)) <= 2.0
+                THEN w.last_team_gid
+                ELSE w.gid + 1
+                END
+            WHEN r.rule = 'REGULAR' THEN
+                CASE
+                WHEN w.last_reg_time IS NOT NULL
+                AND (julianday(r.playedTime) - julianday(w.last_reg_time)) <= 2.0
+                AND r.stageId = w.last_reg_stage
+                AND r.suppliedWeapon = w.last_reg_weapon
+                THEN w.last_reg_gid
+                ELSE w.gid + 1
+                END
+            WHEN r.rule = 'BIG_RUN' THEN w.gid + 1
+            ELSE w.last_valid_gid
+            END AS group_id,
+
+            /* 下一次新组编号是否自增 */
+            CASE
+            WHEN r.rule = 'TEAM_CONTEST' THEN
+                CASE
+                WHEN w.last_team_time IS NOT NULL
+                AND (julianday(r.playedTime) - julianday(w.last_team_time)) <= 2.0
+                THEN w.gid
+                ELSE w.gid + 1
+                END
+            WHEN r.rule = 'REGULAR' THEN
+                CASE
+                WHEN w.last_reg_time IS NOT NULL
+                AND (julianday(r.playedTime) - julianday(w.last_reg_time)) <= 2.0
+                AND r.stageId = w.last_reg_stage
+                AND r.suppliedWeapon = w.last_reg_weapon
+                THEN w.gid
+                ELSE w.gid + 1
+                END
+            WHEN r.rule = 'BIG_RUN' THEN w.gid + 1
+            ELSE w.gid
+            END AS gid,
+
+            /* 最近一次有效组号：当前 group_id 非 -1（我们没把 -1 写入组号）则更新为本次 */
+            CASE
+            WHEN
+                CASE
+                WHEN r.rule = 'TEAM_CONTEST' THEN
+                    CASE
+                    WHEN w.last_team_time IS NOT NULL
+                    AND (julianday(r.playedTime) - julianday(w.last_team_time)) <= 2.0
+                    THEN w.last_team_gid ELSE w.gid + 1 END
+                WHEN r.rule = 'REGULAR' THEN
+                    CASE
+                    WHEN w.last_reg_time IS NOT NULL
+                    AND (julianday(r.playedTime) - julianday(w.last_reg_time)) <= 2.0
+                    AND r.stageId = w.last_reg_stage
+                    AND r.suppliedWeapon = w.last_reg_weapon
+                    THEN w.last_reg_gid ELSE w.gid + 1 END
+                WHEN r.rule = 'BIG_RUN' THEN w.gid + 1
+                ELSE w.last_valid_gid
+                END <> -1
+            THEN
+                CASE
+                WHEN r.rule = 'TEAM_CONTEST' THEN
+                    CASE
+                    WHEN w.last_team_time IS NOT NULL
+                    AND (julianday(r.playedTime) - julianday(w.last_team_time)) <= 2.0
+                    THEN w.last_team_gid ELSE w.gid + 1 END
+                WHEN r.rule = 'REGULAR' THEN
+                    CASE
+                    WHEN w.last_reg_time IS NOT NULL
+                    AND (julianday(r.playedTime) - julianday(w.last_reg_time)) <= 2.0
+                    AND r.stageId = w.last_reg_stage
+                    AND r.suppliedWeapon = w.last_reg_weapon
+                    THEN w.last_reg_gid ELSE w.gid + 1 END
+                WHEN r.rule = 'BIG_RUN' THEN w.gid + 1
+                ELSE w.last_valid_gid
+                END
+            ELSE w.last_valid_gid
+            END AS last_valid_gid,
+
+            /* 刷新 TEAM_CONTEST 锚点 */
+            CASE WHEN r.rule = 'TEAM_CONTEST' THEN r.playedTime ELSE w.last_team_time END AS last_team_time,
+            CASE
+            WHEN r.rule = 'TEAM_CONTEST' THEN
+                CASE
+                WHEN w.last_team_time IS NOT NULL
+                AND (julianday(r.playedTime) - julianday(w.last_team_time)) <= 2.0
+                THEN w.last_team_gid
+                ELSE w.gid + 1
+                END
+            ELSE w.last_team_gid
+            END AS last_team_gid,
+
+            /* 刷新 REGULAR 锚点 */
+            CASE WHEN r.rule = 'REGULAR' THEN r.playedTime     ELSE w.last_reg_time   END AS last_reg_time,
+            CASE WHEN r.rule = 'REGULAR' THEN r.stageId        ELSE w.last_reg_stage  END AS last_reg_stage,
+            CASE WHEN r.rule = 'REGULAR' THEN r.suppliedWeapon ELSE w.last_reg_weapon END AS last_reg_weapon,
+            CASE
+            WHEN r.rule = 'REGULAR' THEN
+                CASE
+                WHEN w.last_reg_time IS NOT NULL
+                AND (julianday(r.playedTime) - julianday(w.last_reg_time)) <= 2.0
+                AND r.stageId = w.last_reg_stage
+                AND r.suppliedWeapon = w.last_reg_weapon
+                THEN w.last_reg_gid
+                ELSE w.gid + 1
+                END
+            ELSE w.last_reg_gid
+            END AS last_reg_gid
+
+        FROM walk w
+        JOIN ranked r
+            ON r.accountId = w.accountId
+        AND r.rn       = w.rn + 1
+        ),
+        /* 在递归结果上计算你要的“反之亦然”标记：
+        若当前 REGULAR 落在 TEAM_CONTEST 窗口内（距最近 TEAM_CONTEST ≤ 48h）：
+            - 若它与上一次 REGULAR 本应属同一组（≤48h 且同 stage/weapon） → reg_flag = -1
+            - 否则 → reg_flag = 1
+        其余情况 → reg_flag = 0
+        */
+        labeled AS (
+        SELECT
+            w.*,
+            CASE
+            WHEN w.rule = 'REGULAR'
+            AND w.last_team_time IS NOT NULL
+            AND (julianday(w.playedTime) - julianday(w.last_team_time)) <= 2.0
+            THEN
+                CASE
+                WHEN w.last_reg_time IS NOT NULL
+                AND (julianday(w.playedTime) - julianday(w.last_reg_time)) <= 2.0
+                AND w.stageId = w.last_reg_stage
+                AND w.suppliedWeapon = w.last_reg_weapon
+                THEN -1
+                ELSE 1
+                END
+            ELSE 0
+            END AS reg_flag
+        FROM walk w
+        )
+        SELECT
+        id, rule, sp3PrincipalId, boss, suppliedWeapon, egg, powerEgg, bossDefeated,
+        wave, stageId, afterGrade, afterGradePoint, afterGradeDiff, preDetailId,
+        goldScale, silverScale, bronzeScale, jobPoint, jobScore, jobRate, jobBonus,
+        playedTime, dangerRate, smellMeter, accountId, isDeleted, isFavorite,
+        group_id AS GroupID,
+        reg_flag
+        FROM labeled;
+        """
+        try db.execute(sql: sql)
+    }
     
     
     
