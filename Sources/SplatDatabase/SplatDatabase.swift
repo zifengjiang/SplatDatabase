@@ -666,7 +666,7 @@ public class SplatDatabase {
         try db.execute(sql: sql)
     }
     
-    migrator.registerMigration("fixBigRunGrouping") { db in
+    migrator.registerMigration("fixBigRunGrouping1") { db in
         let sql = """
         DROP VIEW IF EXISTS coop_view;
 
@@ -686,7 +686,6 @@ public class SplatDatabase {
         - last_team_time  : 最近一次 TEAM_CONTEST 的时间
         - last_team_gid   : 最近一次 TEAM_CONTEST 所属组号
         - last_reg_time/last_reg_stage/last_reg_weapon/last_reg_gid : 最近一次 REGULAR 的锚点
-        - last_bigrun_weapon/last_bigrun_gid : 最近一次 BIG_RUN 的锚点
         - gid             : "下一次新组"将使用的编号
         - last_valid_gid  : 最近一次有效(非 -1)组号，供其它模式继承
         */
@@ -704,10 +703,7 @@ public class SplatDatabase {
             CASE WHEN r.rule = 'REGULAR' THEN r.playedTime     END AS last_reg_time,
             CASE WHEN r.rule = 'REGULAR' THEN r.stageId        END AS last_reg_stage,
             CASE WHEN r.rule = 'REGULAR' THEN r.suppliedWeapon END AS last_reg_weapon,
-            CASE WHEN r.rule = 'REGULAR' THEN 1                END AS last_reg_gid,
-
-            CASE WHEN r.rule = 'BIG_RUN' THEN r.suppliedWeapon END AS last_bigrun_weapon,
-            CASE WHEN r.rule = 'BIG_RUN' THEN 1                END AS last_bigrun_gid
+            CASE WHEN r.rule = 'REGULAR' THEN 1                END AS last_reg_gid
         FROM ranked r
         WHERE r.rn = 1
 
@@ -717,7 +713,7 @@ public class SplatDatabase {
         SELECT
             r.*,
 
-            /* 组号：TEAM_CONTEST/REGULAR 走 48h 规则，BIG_RUN 同 weapon 同组，其它继承 */
+            /* 组号：TEAM_CONTEST/REGULAR 走 48h 规则，BIG_RUN 检查前一条记录，其它继承 */
             /* 注意：这里我们不把 "-1/1" 写进 GroupID，避免影响聚合；-1/1 会单独写入 reg_flag */
             CASE
             WHEN r.rule = 'TEAM_CONTEST' THEN
@@ -738,9 +734,9 @@ public class SplatDatabase {
                 END
             WHEN r.rule = 'BIG_RUN' THEN
                 CASE
-                WHEN w.last_bigrun_weapon IS NOT NULL
-                AND r.suppliedWeapon = w.last_bigrun_weapon
-                THEN w.last_bigrun_gid
+                WHEN w.rule = 'BIG_RUN'
+                AND r.suppliedWeapon = w.suppliedWeapon
+                THEN w.group_id
                 ELSE w.gid + 1
                 END
             ELSE w.last_valid_gid
@@ -766,8 +762,8 @@ public class SplatDatabase {
                 END
             WHEN r.rule = 'BIG_RUN' THEN
                 CASE
-                WHEN w.last_bigrun_weapon IS NOT NULL
-                AND r.suppliedWeapon = w.last_bigrun_weapon
+                WHEN w.rule = 'BIG_RUN'
+                AND r.suppliedWeapon = w.suppliedWeapon
                 THEN w.gid
                 ELSE w.gid + 1
                 END
@@ -792,9 +788,9 @@ public class SplatDatabase {
                     THEN w.last_reg_gid ELSE w.gid + 1 END
                 WHEN r.rule = 'BIG_RUN' THEN
                     CASE
-                    WHEN w.last_bigrun_weapon IS NOT NULL
-                    AND r.suppliedWeapon = w.last_bigrun_weapon
-                    THEN w.last_bigrun_gid ELSE w.gid + 1 END
+                    WHEN w.rule = 'BIG_RUN'
+                    AND r.suppliedWeapon = w.suppliedWeapon
+                    THEN w.group_id ELSE w.gid + 1 END
                 ELSE w.last_valid_gid
                 END <> -1
             THEN
@@ -813,9 +809,9 @@ public class SplatDatabase {
                     THEN w.last_reg_gid ELSE w.gid + 1 END
                 WHEN r.rule = 'BIG_RUN' THEN
                     CASE
-                    WHEN w.last_bigrun_weapon IS NOT NULL
-                    AND r.suppliedWeapon = w.last_bigrun_weapon
-                    THEN w.last_bigrun_gid ELSE w.gid + 1 END
+                    WHEN w.rule = 'BIG_RUN'
+                    AND r.suppliedWeapon = w.suppliedWeapon
+                    THEN w.group_id ELSE w.gid + 1 END
                 ELSE w.last_valid_gid
                 END
             ELSE w.last_valid_gid
@@ -849,20 +845,7 @@ public class SplatDatabase {
                 ELSE w.gid + 1
                 END
             ELSE w.last_reg_gid
-            END AS last_reg_gid,
-
-            /* 刷新 BIG_RUN 锚点 */
-            CASE WHEN r.rule = 'BIG_RUN' THEN r.suppliedWeapon ELSE w.last_bigrun_weapon END AS last_bigrun_weapon,
-            CASE
-            WHEN r.rule = 'BIG_RUN' THEN
-                CASE
-                WHEN w.last_bigrun_weapon IS NOT NULL
-                AND r.suppliedWeapon = w.last_bigrun_weapon
-                THEN w.last_bigrun_gid
-                ELSE w.gid + 1
-                END
-            ELSE w.last_bigrun_gid
-            END AS last_bigrun_gid
+            END AS last_reg_gid
 
         FROM walk w
         JOIN ranked r
