@@ -666,7 +666,7 @@ public class SplatDatabase {
         try db.execute(sql: sql)
     }
     
-    migrator.registerMigration("fixBigRunGrouping1") { db in
+    migrator.registerMigration("fixBigRunGrouping2") { db in
         let sql = """
         DROP VIEW IF EXISTS coop_view;
 
