@@ -892,6 +892,15 @@ public class SplatDatabase {
     
     
     
+    migrator.registerMigration("addBynameFormattedColumn") { db in
+        let columns = try db.columns(in: "player")
+        if !columns.contains(where: { $0.name == "bynameFormatted" }) {
+            try db.alter(table: "player") { t in
+                t.add(column: "bynameFormatted", .integer)
+            }
+        }
+    }
+    
     migrator.registerMigration("insertI18nForVersion1010") { db in
         try self.updateI18n(db: db)
     }
