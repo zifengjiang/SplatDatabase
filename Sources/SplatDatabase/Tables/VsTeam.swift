@@ -67,8 +67,8 @@ extension VsTeam: PreComputable{
         var rows = try VsTeam.fetchAll(db,sql: "SELECT * FROM vsTeam WHERE battleId = \(battleId) ORDER BY `order`;")
 
         for i in rows.indices{
-            let players:[Player] = try! Player.create(from: db, identifier: (rows[i].id!, "vsTeamId"))
-            rows[i].players = players
+            guard let teamId = rows[i].id else { continue }
+            rows[i].players = (try? Player.create(from: db, identifier: (teamId, "vsTeamId"))) ?? []
         }
 
         return rows

@@ -97,7 +97,8 @@ public struct Coop: Codable, FetchableRecord, PersistableRecord {
         self.jobScore = json["jobScore"].int
         self.jobRate = json["jobRate"].double
         self.jobBonus = json["jobBonus"].int
-        self.playedTime = json["id"].stringValue.base64DecodedString.extractedDate!
+        // 记录时间从 detail id 中解析；解析失败时退化为当前时间，避免直接崩溃
+        self.playedTime = json["id"].stringValue.base64DecodedString.extractedDate ?? Date()
         self.dangerRate = json["dangerRate"].doubleValue
         self.smellMeter = json["smellMeter"].int
         self.accountId = getAccountId(by: json["id"].stringValue.extractUserId(), db: db)
@@ -243,7 +244,7 @@ extension SplatDatabase {
 
     private func isDetailExist(id:String, table:String = "coop", includeDeleted: Bool = false, db:Database?) throws -> Bool {
         let sp3PrincipalId = id.getDetailUUID()
-        let playedTime = id.base64DecodedString.extractedDate!
+        guard let playedTime = id.base64DecodedString.extractedDate else { return false }
         let sp3Id = id.extractUserId()
         let deletedCondition = includeDeleted ? "" : "AND \(table).isDeleted = 0"
         let sql = """
@@ -261,78 +262,14 @@ extension SplatDatabase {
         var count = 0
 
         if let db = db{
-            count = try Int.fetchOne(db, sql: sql, arguments: [sp3PrincipalId,playedTime, sp3Id])!
+            count = try Int.fetchOne(db, sql: sql, arguments: [sp3PrincipalId,playedTime, sp3Id]) ?? 0
         }else{
             try self.dbQueue.read { db in
-                count = try Int.fetchOne(db, sql: sql, arguments: [sp3PrincipalId,playedTime, sp3Id])!
+                count = try Int.fetchOne(db, sql: sql, arguments: [sp3PrincipalId,playedTime, sp3Id]) ?? 0
             }
         }
         return count > 0
     }
-}
-
-extension SplatDatabase {
-    public func filterNotExistsCoop(ids: [String]) throws -> [String] {
-        return try filterNotExistsCoop(ids: ids, includeDeleted: false)
-    }
-    
-    public func filterNotExistsCoopIncludingDeleted(ids: [String]) throws -> [String] {
-        return try filterNotExistsCoop(ids: ids, includeDeleted: true)
-    }
-    
-    private func filterNotExistsCoop(ids: [String], includeDeleted: Bool) throws -> [String] {
-            // 提取所有需要的字段
-        let sp3PrincipalIds = ids.map { $0.getDetailUUID() }
-        let playedTimes = ids.map { $0.base64DecodedString.extractedDate! }
-        let sp3Ids = ids.map { $0.extractUserId() }
-
-            // 构建SQL查询语句
-        let deletedCondition = includeDeleted ? "" : "AND coop.isDeleted = 0"
-        let sql = """
-                SELECT
-                sp3PrincipalId, playedTime, sp3Id
-                FROM
-                coop
-                JOIN account ON coop.accountId = account.id
-                WHERE
-                sp3PrincipalId IN (\(sp3PrincipalIds.map { _ in "?" }.joined(separator: ", ")))
-                AND playedTime IN (\(playedTimes.map { _ in "?" }.joined(separator: ", ")))
-                AND sp3Id IN (\(sp3Ids.map { _ in "?" }.joined(separator: ", ")))
-                \(deletedCondition)
-              """
-
-            // 将所有参数转换为DatabaseValueConvertible数组
-        let arguments: [DatabaseValueConvertible] = sp3PrincipalIds + playedTimes + sp3Ids
-
-        let existingRecords = try dbQueue.read { db in
-                // 执行查询，获取存在的记录
-            try Row.fetchAll(db, sql: sql, arguments: StatementArguments(arguments))
-        }
-
-
-            // 创建一个Set用于存储已存在的记录ID
-        var existingSet: Set<String> = []
-        for record in existingRecords {
-            let sp3PrincipalId: String = record["sp3PrincipalId"]
-            let playedTime: Date = record["playedTime"]
-            let sp3Id: String = record["sp3Id"]
-
-                // 重建原始ID
-            if let originalId = ids.first(where: {
-                $0.getDetailUUID() == sp3PrincipalId &&
-                $0.base64DecodedString.extractedDate! == playedTime &&
-                $0.extractUserId() == sp3Id
-            }) {
-                existingSet.insert(originalId)
-            }
-        }
-
-            // 计算不存在的ID
-        let notExistIds = ids.filter { !existingSet.contains($0) }
-
-        return notExistIds
-    }
-
 }
 
 extension SplatDatabase {

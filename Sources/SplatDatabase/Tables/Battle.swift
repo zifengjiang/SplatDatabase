@@ -1,6 +1,7 @@
 import Foundation
 import GRDB
 import SwiftyJSON
+import os
 
 public struct Battle:Codable, FetchableRecord, PersistableRecord{
     public var id:Int64?
@@ -52,7 +53,8 @@ public struct Battle:Codable, FetchableRecord, PersistableRecord{
         self.mode = json["vsMode"]["mode"].stringValue
         self.rule = json["vsRule"]["rule"].stringValue
         self.stageId = getImageId(for:json["vsStage"]["id"].stringValue, db: db)
-        self.playedTime = json["id"].stringValue.base64DecodedString.extractedDate!
+        // 记录时间从 detail id 中解析；解析失败时退化为当前时间，避免直接崩溃
+        self.playedTime = json["id"].stringValue.base64DecodedString.extractedDate ?? Date()
         self.duration = json["duration"].intValue
         self.judgement = json["judgement"].stringValue
         self.knockout = json["knockout"].string
@@ -95,6 +97,8 @@ extension SplatDatabase {
                 try insertBattle(json: json, db: db)
                 return .commit
             } catch{
+                // 插入失败时回滚并记录原因，避免静默丢数据
+                os_log("Database Error: [insertBattle] %{public}@", "\(error)")
                 return .rollback
             }
         }
@@ -103,7 +107,7 @@ extension SplatDatabase {
     public func insertBattle(json: JSON, db:Database) throws {
         
         let userId = json["id"].stringValue.extractUserId()
-        let userCount = try Int.fetchOne(db, sql: "SELECT COUNT(*) FROM account WHERE sp3Id = ?", arguments: [userId])!
+        let userCount = try Int.fetchOne(db, sql: "SELECT COUNT(*) FROM account WHERE sp3Id = ?", arguments: [userId]) ?? 0
         if userCount == 0{
             var account = Account()
             account.sp3Id = userId

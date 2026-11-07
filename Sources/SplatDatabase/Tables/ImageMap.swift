@@ -18,11 +18,11 @@ public struct ImageMap:Codable, FetchableRecord, PersistableRecord{
 
 public func getImageId(for nameId:String? = nil, hash:String? = nil, db:Database) -> UInt16 {
     if let nameId = nameId {
-        let row = try! Row.fetchOne(db, sql: "SELECT id FROM imageMap WHERE nameId = ?",arguments:[nameId])
+        let row = try? Row.fetchOne(db, sql: "SELECT id FROM imageMap WHERE nameId = ?",arguments:[nameId])
         return row?["id"] ?? 0
     }
     if let hash = hash {
-        let row = try! Row.fetchOne(db, sql: "SELECT id FROM imageMap WHERE hash = ?",arguments:[hash])
+        let row = try? Row.fetchOne(db, sql: "SELECT id FROM imageMap WHERE hash = ?",arguments:[hash])
         if let id:UInt16 = row?["id"]{
             return id
         }

@@ -37,7 +37,7 @@ struct I18n: Codable, FetchableRecord, PersistableRecord {
 
 public func getI18nId(by key:String?, db:Database) -> UInt16?{
     guard let key = key else{ return nil }
-    let row = try! Row.fetchOne(db, sql: "SELECT id FROM i18n WHERE key = ?",arguments:[key])
+    let row = try? Row.fetchOne(db, sql: "SELECT id FROM i18n WHERE key = ?",arguments:[key])
     return row?["id"] ?? nil
 }
 
