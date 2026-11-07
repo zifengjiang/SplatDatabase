@@ -18,13 +18,11 @@ public class SplatDatabase {
         try migrator.migrate(dbQueue)
     }
 
-        /// test use
-    public init(path:String) {
-        do {
-            try createDatabase(path: path)
-        }catch{
-            print(#file,#line,error.localizedDescription)
-        }
+    /// 指定路径初始化（测试 / 导入场景使用）。
+    ///
+    /// 失败时向上抛出，避免留下 `dbQueue` 为 nil 的半初始化对象。
+    public init(path: String) throws {
+        try createDatabase(path: path)
     }
 
     private var migrator: DatabaseMigrator {

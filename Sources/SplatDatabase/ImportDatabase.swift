@@ -134,6 +134,15 @@ extension SplatDatabase {
             print("警告: 目标数据库中不存在表 '\(tableName)'，跳过导入")
             return
         }
+
+        // 源库可能来自旧版本 App，缺少新表时跳过而不是直接报错
+        let sourceTableExists = try sourceDb.read { db in
+            try db.tableExists(tableName)
+        }
+        guard sourceTableExists else {
+            print("警告: 源数据库中不存在表 '\(tableName)'，跳过导入")
+            return
+        }
         
         // 获取源表的列信息
         let sourceColumns = try sourceDb.read { db in
@@ -249,6 +258,15 @@ extension SplatDatabase {
         
         guard targetTableExists else {
             print("警告: 目标数据库中不存在表 '\(tableName)'，跳过导入")
+            return
+        }
+
+        // 源库可能来自旧版本 App，缺少新表时跳过而不是直接报错
+        let sourceTableExists = try sourceDb.read { db in
+            try db.tableExists(tableName)
+        }
+        guard sourceTableExists else {
+            print("警告: 源数据库中不存在表 '\(tableName)'，跳过导入")
             return
         }
         
@@ -466,6 +484,15 @@ extension SplatDatabase {
         
         guard targetTableExists else {
             print("警告: 目标数据库中不存在表 '\(tableName)'，跳过导入")
+            return
+        }
+
+        // 源库可能来自旧版本 App，缺少新表时跳过而不是直接报错
+        let sourceTableExists = try sourceDb.read { db in
+            try db.tableExists(tableName)
+        }
+        guard sourceTableExists else {
+            print("警告: 源数据库中不存在表 '\(tableName)'，跳过导入")
             return
         }
         
