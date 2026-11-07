@@ -20,10 +20,16 @@ class Splat3DatabaseTests: XCTestCase {
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
         tempDatabasePath = directory.appendingPathComponent("ink.sqlite").path
         dbManager = SplatDatabase(path: tempDatabasePath)
+
+        // 空库里没有 imageMap / i18n 字典数据，插入记录前需要先灌入内置资源
+        try dbManager.dbQueue.write { db in
+            try dbManager.updateImageMap(db: db)
+            try dbManager.updateI18n(db: db)
+        }
     }
 
     override func tearDownWithError() throws {
-        dbManager = nil
+        // 保持 dbManager 存活：GRDB 的异步写入/观察可能在用例结束后仍在执行
         if let tempDatabasePath {
             try? FileManager.default.removeItem(atPath: (tempDatabasePath as NSString).deletingLastPathComponent)
         }
@@ -44,7 +50,7 @@ class Splat3DatabaseTests: XCTestCase {
 
         let value = json["data"]["coopHistoryDetail"]
 
-        try dbManager.insertCoop(json: value)
+        try await dbManager.insertCoop(json: value)
 
         let coops = try await dbManager.dbQueue.read { db in
             return try Coop.fetchAll(db)
@@ -70,7 +76,7 @@ class Splat3DatabaseTests: XCTestCase {
 
         let values = json["data"]
 
-        try dbManager.insertBattle(json: values["vsHistoryDetail"])
+        try await dbManager.insertBattle(json: values[1])
 
         let battles = try await dbManager.dbQueue.read { db in
             return try Battle.fetchAll(db)
@@ -492,7 +498,7 @@ class Splat3DatabaseTests: XCTestCase {
         let json: JSON = JSON(parseJSON: try String(contentsOfFile: try XCTUnwrap(path).path))
         let value = json["data"]["coopHistoryDetail"]
         
-        try dbManager.insertCoop(json: value)
+        try await dbManager.insertCoop(json: value)
         
         // 获取插入的coop记录
         let coops = try await dbManager.fetchActiveCoops()
@@ -534,7 +540,7 @@ class Splat3DatabaseTests: XCTestCase {
         let json: JSON = JSON(parseJSON: try String(contentsOfFile: try XCTUnwrap(path).path))
         let value = json["data"]["coopHistoryDetail"]
         
-        try dbManager.insertCoop(json: value)
+        try await dbManager.insertCoop(json: value)
         
         // 获取插入的coop记录
         let coops = try await dbManager.fetchActiveCoops()
@@ -570,7 +576,7 @@ class Splat3DatabaseTests: XCTestCase {
         let json: JSON = JSON(parseJSON: try String(contentsOfFile: try XCTUnwrap(path).path))
         let values = json["data"]
         
-        try dbManager.insertBattle(json: values["vsHistoryDetail"])
+        try await dbManager.insertBattle(json: values[1])
         
         // 获取插入的battle记录
         let battles = try await dbManager.fetchActiveBattles()
@@ -612,7 +618,7 @@ class Splat3DatabaseTests: XCTestCase {
         let json: JSON = JSON(parseJSON: try String(contentsOfFile: try XCTUnwrap(path).path))
         let values = json["data"]
         
-        try dbManager.insertBattle(json: values["vsHistoryDetail"])
+        try await dbManager.insertBattle(json: values[1])
         
         // 获取插入的battle记录
         let battles = try await dbManager.fetchActiveBattles()
@@ -645,16 +651,16 @@ class Splat3DatabaseTests: XCTestCase {
         // 首先插入一些记录并软删除它们
         let bundle = Bundle.module
         let coopPath = bundle.url(forResource: "CoopDetailHolder", withExtension: "json")
-        let coopJson: JSON = JSON(parseJSON: try String(contentsOfFile: coopPath!.path))
+        let coopJson: JSON = JSON(parseJSON: try String(contentsOfFile: try XCTUnwrap(coopPath).path))
         let coopValue = coopJson["data"]["coopHistoryDetail"]
         
         let battlePath = bundle.url(forResource: "VsHistoryDetailQuery", withExtension: "json")
-        let battleJson: JSON = JSON(parseJSON: try String(contentsOfFile: battlePath!.path))
+        let battleJson: JSON = JSON(parseJSON: try String(contentsOfFile: try XCTUnwrap(battlePath).path))
         let battleValues = battleJson["data"]
         
         // 插入记录
-        try dbManager.insertCoop(json: coopValue)
-        try dbManager.insertBattle(json: battleValues[1])
+        try await dbManager.insertCoop(json: coopValue)
+        try await dbManager.insertBattle(json: battleValues[1])
         
         // 获取记录并软删除
         let coops = try await dbManager.fetchActiveCoops()
@@ -700,15 +706,15 @@ class Splat3DatabaseTests: XCTestCase {
         // 插入测试数据
         let bundle = Bundle.module
         let coopPath = bundle.url(forResource: "CoopDetailHolder", withExtension: "json")
-        let coopJson: JSON = JSON(parseJSON: try String(contentsOfFile: coopPath!.path))
+        let coopJson: JSON = JSON(parseJSON: try String(contentsOfFile: try XCTUnwrap(coopPath).path))
         let coopValue = coopJson["data"]["coopHistoryDetail"]
         
         let battlePath = bundle.url(forResource: "VsHistoryDetailQuery", withExtension: "json")
-        let battleJson: JSON = JSON(parseJSON: try String(contentsOfFile: battlePath!.path))
+        let battleJson: JSON = JSON(parseJSON: try String(contentsOfFile: try XCTUnwrap(battlePath).path))
         let battleValues = battleJson["data"]
         
-        try dbManager.insertCoop(json: coopValue)
-        try dbManager.insertBattle(json: battleValues[1])
+        try await dbManager.insertCoop(json: coopValue)
+        try await dbManager.insertBattle(json: battleValues[1])
         
         // 获取记录
         let coops = try await dbManager.fetchActiveCoops()

@@ -44,6 +44,7 @@ public struct Battle:Codable, FetchableRecord, PersistableRecord{
     public var stage:ImageMap? = nil
 
     enum CodingKeys: String, CodingKey {
+        case id
         case sp3PrincipalId, mode, rule, stageId, playedTime, duration, judgement, knockout, udemae, preDetailId
         case earnedUdemaePoint, bankaraMode, bankaraPower, leagueMatchEventId, myLeaguePower, lastXPower, entireXPower, festDragonMatchType, festContribution, festJewel, myFestPower, awards, accountId, isDeleted, isFavorite
     }
@@ -88,19 +89,13 @@ public struct Battle:Codable, FetchableRecord, PersistableRecord{
 }
 
 extension SplatDatabase {
-    public func insertBattle(json:JSON) throws{
-        try self.dbQueue.writeInTransaction { db in
-            do{
-                if try isBattleExist(id: json["id"].stringValue,db: db){
-                    return .commit
-                }
-                try insertBattle(json: json, db: db)
-                return .commit
-            } catch{
-                // 插入失败时回滚并记录原因，避免静默丢数据
-                os_log("Database Error: [insertBattle] %{public}@", "\(error)")
-                return .rollback
-            }
+    /// 插入一条对战记录（已存在则跳过）。
+    ///
+    /// 与 `insertCoop(json:)` 保持一致：异步、errors 向上抛出，调用方决定如何处理失败。
+    public func insertBattle(json: JSON) async throws {
+        try await self.dbQueue.write { db in
+            guard try !self.isBattleExist(id: json["id"].stringValue, db: db) else { return }
+            try self.insertBattle(json: json, db: db)
         }
     }
 

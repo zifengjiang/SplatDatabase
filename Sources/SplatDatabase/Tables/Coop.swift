@@ -132,28 +132,20 @@ extension Coop: PreComputable {
 
 
 extension SplatDatabase{
-    public func insertCoop(json:JSON) throws {
-        self.dbQueue.customAsyncWrite { db in
-            do{
-                if try self.isCoopExist(id: json["id"].stringValue,db: db){
-                    return
-                }
-                try self.insertCoop(json: json, db: db)
-            } catch{
-                print("insertCoop error \(error)")
-                print(json["id"].stringValue)
-            }
-        } completion: { _, error in
-            if case let .failure(error) = error {
-                os_log("Database Error: [saveJob] \(error.localizedDescription)")
-            }
+    /// 插入一条打工记录（已存在则跳过）。
+    ///
+    /// 与 `insertBattle(json:)` 保持一致：异步、errors 向上抛出，调用方决定如何处理失败。
+    public func insertCoop(json: JSON) async throws {
+        try await self.dbQueue.write { db in
+            guard try !self.isCoopExist(id: json["id"].stringValue, db: db) else { return }
+            try self.insertCoop(json: json, db: db)
         }
     }
 
     public func insertCoop(json:JSON, db:Database) throws {
 
         let userId = json["id"].stringValue.extractUserId()
-        let userCount = try Int.fetchOne(db, sql: "SELECT COUNT(*) FROM account WHERE sp3Id = ?", arguments: [userId])!
+        let userCount = try Int.fetchOne(db, sql: "SELECT COUNT(*) FROM account WHERE sp3Id = ?", arguments: [userId]) ?? 0
         if userCount == 0{
             var account = Account()
             account.sp3Id = userId

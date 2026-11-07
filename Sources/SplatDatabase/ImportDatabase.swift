@@ -4,6 +4,17 @@ import SwiftyJSON
 
 extension SplatDatabase{
 
+    /// 按记录类型写入一条 detail（导入场景使用，调用方负责事务）。
+    func insertDetail(json: JSON, isCoop: Bool, db: Database) throws {
+        if isCoop {
+            guard try !isCoopExist(id: json["id"].stringValue, db: db) else { return }
+            try insertCoop(json: json, db: db)
+        } else {
+            guard try !isBattleExist(id: json["id"].stringValue, db: db) else { return }
+            try insertBattle(json: json, db: db)
+        }
+    }
+
     public func importFromConchBay(dbPath: String, progress: ((Double) -> Void)? = nil) throws {
 
         let db = try DatabasePool(path: dbPath)
@@ -19,12 +30,12 @@ extension SplatDatabase{
 
             while let row = try cursor.next() {
                 if let mode = row["mode"] as String?, let detail = row["detail"] as String? {
-                    if mode == "salmon_run" {
-                        let json = JSON(parseJSON: detail)["coopHistoryDetail"]
-                        try self.insertCoop(json: json)
-                    } else {
-                        let json = JSON(parseJSON: detail)["vsHistoryDetail"]
-                        try self.insertBattle(json: json)
+                    let json = mode == "salmon_run"
+                        ? JSON(parseJSON: detail)["coopHistoryDetail"]
+                        : JSON(parseJSON: detail)["vsHistoryDetail"]
+                    // 整批导入放在一个事务里，避免每行一次写事务
+                    try self.dbQueue.write { db in
+                        try self.insertDetail(json: json, isCoop: mode == "salmon_run", db: db)
                     }
                 }
                     // 更新进度
@@ -57,14 +68,10 @@ extension SplatDatabase{
                 while let row = try cursor.next() {
                         // 安全地从 row 中获取数据
                     if let mode = row["ZMODE"] as String?, let detailData = row["ZDETAIL"] as? Data  {
-
-                        if mode == "salmon_run" {
-                                // 解析 JSON 并插入
-                            let json = try JSON(data: detailData)
-                            try self.insertCoop(json: json)
-                        } else {
-                            let json = try JSON(data: detailData)
-                            try self.insertBattle(json: json)
+                        let json = try JSON(data: detailData)
+                        let isCoop = mode == "salmon_run"
+                        try self.dbQueue.write { db in
+                            try self.insertDetail(json: json, isCoop: isCoop, db: db)
                         }
                     }
                         // 更新进度
