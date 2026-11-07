@@ -97,7 +97,8 @@ public struct Coop: Codable, FetchableRecord, PersistableRecord {
         self.jobScore = json["jobScore"].int
         self.jobRate = json["jobRate"].double
         self.jobBonus = json["jobBonus"].int
-        self.playedTime = json["id"].stringValue.base64DecodedString.extractedDate!
+        // 记录时间从 detail id 中解析；解析失败时退化为当前时间，避免直接崩溃
+        self.playedTime = json["id"].stringValue.base64DecodedString.extractedDate ?? Date()
         self.dangerRate = json["dangerRate"].doubleValue
         self.smellMeter = json["smellMeter"].int
         self.accountId = getAccountId(by: json["id"].stringValue.extractUserId(), db: db)
@@ -243,7 +244,7 @@ extension SplatDatabase {
 
     private func isDetailExist(id:String, table:String = "coop", includeDeleted: Bool = false, db:Database?) throws -> Bool {
         let sp3PrincipalId = id.getDetailUUID()
-        let playedTime = id.base64DecodedString.extractedDate!
+        guard let playedTime = id.base64DecodedString.extractedDate else { return false }
         let sp3Id = id.extractUserId()
         let deletedCondition = includeDeleted ? "" : "AND \(table).isDeleted = 0"
         let sql = """
@@ -261,78 +262,14 @@ extension SplatDatabase {
         var count = 0
 
         if let db = db{
-            count = try Int.fetchOne(db, sql: sql, arguments: [sp3PrincipalId,playedTime, sp3Id])!
+            count = try Int.fetchOne(db, sql: sql, arguments: [sp3PrincipalId,playedTime, sp3Id]) ?? 0
         }else{
             try self.dbQueue.read { db in
-                count = try Int.fetchOne(db, sql: sql, arguments: [sp3PrincipalId,playedTime, sp3Id])!
+                count = try Int.fetchOne(db, sql: sql, arguments: [sp3PrincipalId,playedTime, sp3Id]) ?? 0
             }
         }
         return count > 0
     }
-}
-
-extension SplatDatabase {
-    public func filterNotExistsCoop(ids: [String]) throws -> [String] {
-        return try filterNotExistsCoop(ids: ids, includeDeleted: false)
-    }
-    
-    public func filterNotExistsCoopIncludingDeleted(ids: [String]) throws -> [String] {
-        return try filterNotExistsCoop(ids: ids, includeDeleted: true)
-    }
-    
-    private func filterNotExistsCoop(ids: [String], includeDeleted: Bool) throws -> [String] {
-            // 提取所有需要的字段
-        let sp3PrincipalIds = ids.map { $0.getDetailUUID() }
-        let playedTimes = ids.map { $0.base64DecodedString.extractedDate! }
-        let sp3Ids = ids.map { $0.extractUserId() }
-
-            // 构建SQL查询语句
-        let deletedCondition = includeDeleted ? "" : "AND coop.isDeleted = 0"
-        let sql = """
-                SELECT
-                sp3PrincipalId, playedTime, sp3Id
-                FROM
-                coop
-                JOIN account ON coop.accountId = account.id
-                WHERE
-                sp3PrincipalId IN (\(sp3PrincipalIds.map { _ in "?" }.joined(separator: ", ")))
-                AND playedTime IN (\(playedTimes.map { _ in "?" }.joined(separator: ", ")))
-                AND sp3Id IN (\(sp3Ids.map { _ in "?" }.joined(separator: ", ")))
-                \(deletedCondition)
-              """
-
-            // 将所有参数转换为DatabaseValueConvertible数组
-        let arguments: [DatabaseValueConvertible] = sp3PrincipalIds + playedTimes + sp3Ids
-
-        let existingRecords = try dbQueue.read { db in
-                // 执行查询，获取存在的记录
-            try Row.fetchAll(db, sql: sql, arguments: StatementArguments(arguments))
-        }
-
-
-            // 创建一个Set用于存储已存在的记录ID
-        var existingSet: Set<String> = []
-        for record in existingRecords {
-            let sp3PrincipalId: String = record["sp3PrincipalId"]
-            let playedTime: Date = record["playedTime"]
-            let sp3Id: String = record["sp3Id"]
-
-                // 重建原始ID
-            if let originalId = ids.first(where: {
-                $0.getDetailUUID() == sp3PrincipalId &&
-                $0.base64DecodedString.extractedDate! == playedTime &&
-                $0.extractUserId() == sp3Id
-            }) {
-                existingSet.insert(originalId)
-            }
-        }
-
-            // 计算不存在的ID
-        let notExistIds = ids.filter { !existingSet.contains($0) }
-
-        return notExistIds
-    }
-
 }
 
 extension SplatDatabase {
@@ -411,7 +348,7 @@ extension SplatDatabase {
     }
     
     /// 内部删除方法，在事务中执行
-    private func deleteCoop(coopId: Int64, db: Database) throws {
+    func deleteCoop(coopId: Int64, db: Database) throws {
         // 1. 删除weapon表中与coop相关的记录
         try db.execute(sql: "DELETE FROM weapon WHERE coopId = ?", arguments: [coopId])
         
@@ -470,120 +407,88 @@ extension SplatDatabase {
     }
     
     // MARK: - Soft Delete Methods
-    
+
     /// 软删除指定的coop记录（标记为已删除）
     /// - Parameter coopId: coop记录的ID
     public func softDeleteCoop(coopId: Int64) throws {
-        try dbQueue.write { db in
-            try db.execute(sql: "UPDATE coop SET isDeleted = ? WHERE id = ?", arguments: [true, coopId])
-        }
+        try setDeleted(true, kind: .coop, ids: [coopId])
     }
-    
+
     /// 软删除指定的coop记录（通过sp3PrincipalId）
     /// - Parameter sp3PrincipalId: coop记录的sp3PrincipalId
     public func softDeleteCoop(sp3PrincipalId: String) throws {
-        try dbQueue.write { db in
-            try db.execute(sql: "UPDATE coop SET isDeleted = ? WHERE sp3PrincipalId = ?", arguments: [true, sp3PrincipalId])
-        }
+        try setDeleted(true, kind: .coop, sp3PrincipalId: sp3PrincipalId)
     }
-    
+
     /// 恢复软删除的coop记录
     /// - Parameter coopId: coop记录的ID
     public func restoreCoop(coopId: Int64) throws {
-        try dbQueue.write { db in
-            try db.execute(sql: "UPDATE coop SET isDeleted = ? WHERE id = ?", arguments: [false, coopId])
-        }
+        try setDeleted(false, kind: .coop, ids: [coopId])
     }
-    
+
     /// 恢复软删除的coop记录（通过sp3PrincipalId）
     /// - Parameter sp3PrincipalId: coop记录的sp3PrincipalId
     public func restoreCoop(sp3PrincipalId: String) throws {
-        try dbQueue.write { db in
-            try db.execute(sql: "UPDATE coop SET isDeleted = ? WHERE sp3PrincipalId = ?", arguments: [false, sp3PrincipalId])
-        }
+        try setDeleted(false, kind: .coop, sp3PrincipalId: sp3PrincipalId)
     }
-    
+
     /// 永久删除所有已软删除的coop记录
     public func permanentlyDeleteSoftDeletedCoops() throws {
-        try dbQueue.write { db in
-            let softDeletedCoopIds = try Int64.fetchAll(db, sql: "SELECT id FROM coop WHERE isDeleted = ?", arguments: [true])
-            for coopId in softDeletedCoopIds {
-                try deleteCoop(coopId: coopId, db: db)
-            }
-        }
+        try permanentlyDeleteSoftDeleted(.coop)
     }
-    
+
     // MARK: - Favorite Methods
-    
+
     /// 标记coop记录为喜爱
     /// - Parameter coopId: coop记录的ID
     public func markCoopAsFavorite(coopId: Int64) throws {
-        try dbQueue.write { db in
-            try db.execute(sql: "UPDATE coop SET isFavorite = ? WHERE id = ?", arguments: [true, coopId])
-        }
+        try setFavorite(true, kind: .coop, ids: [coopId])
     }
-    
+
     /// 标记coop记录为喜爱（通过sp3PrincipalId）
     /// - Parameter sp3PrincipalId: coop记录的sp3PrincipalId
     public func markCoopAsFavorite(sp3PrincipalId: String) throws {
-        try dbQueue.write { db in
-            try db.execute(sql: "UPDATE coop SET isFavorite = ? WHERE sp3PrincipalId = ?", arguments: [true, sp3PrincipalId])
-        }
+        try setFavorite(true, kind: .coop, sp3PrincipalId: sp3PrincipalId)
     }
-    
+
     /// 取消coop记录的喜爱标记
     /// - Parameter coopId: coop记录的ID
     public func unmarkCoopAsFavorite(coopId: Int64) throws {
-        try dbQueue.write { db in
-            try db.execute(sql: "UPDATE coop SET isFavorite = ? WHERE id = ?", arguments: [false, coopId])
-        }
+        try setFavorite(false, kind: .coop, ids: [coopId])
     }
-    
+
     /// 取消coop记录的喜爱标记（通过sp3PrincipalId）
     /// - Parameter sp3PrincipalId: coop记录的sp3PrincipalId
     public func unmarkCoopAsFavorite(sp3PrincipalId: String) throws {
-        try dbQueue.write { db in
-            try db.execute(sql: "UPDATE coop SET isFavorite = ? WHERE sp3PrincipalId = ?", arguments: [false, sp3PrincipalId])
-        }
+        try setFavorite(false, kind: .coop, sp3PrincipalId: sp3PrincipalId)
     }
-    
+
     // MARK: - Query Methods
-    
+
     /// 获取所有未删除的coop记录
     public func fetchActiveCoops() async throws -> [Coop] {
-        return try await dbQueue.read { db in
-            try Coop.filter(Column("isDeleted") == false).fetchAll(db)
-        }
+        try await fetchRecords(Coop.self, state: .active)
     }
-    
+
     /// 获取所有已删除的coop记录
     public func fetchDeletedCoops() async throws -> [Coop] {
-        return try await dbQueue.read { db in
-            try Coop.filter(Column("isDeleted") == true).fetchAll(db)
-        }
+        try await fetchRecords(Coop.self, state: .deleted)
     }
-    
+
     /// 获取所有喜爱的coop记录
     public func fetchFavoriteCoops() async throws -> [Coop] {
-        return try await dbQueue.read { db in
-            try Coop.filter(Column("isFavorite") == true && Column("isDeleted") == false).fetchAll(db)
-        }
+        try await fetchRecords(Coop.self, state: .favorite)
     }
-    
+
     /// 按账户ID获取未删除的coop记录
     /// - Parameter accountId: 账户ID
     public func fetchActiveCoops(accountId: Int64) async throws -> [Coop] {
-        return try await dbQueue.read { db in
-            try Coop.filter(Column("accountId") == accountId && Column("isDeleted") == false).fetchAll(db)
-        }
+        try await fetchRecords(Coop.self, state: .active, accountId: accountId)
     }
-    
+
     /// 按账户ID获取喜爱的coop记录
     /// - Parameter accountId: 账户ID
     public func fetchFavoriteCoops(accountId: Int64) async throws -> [Coop] {
-        return try await dbQueue.read { db in
-            try Coop.filter(Column("accountId") == accountId && Column("isFavorite") == true && Column("isDeleted") == false).fetchAll(db)
-        }
+        try await fetchRecords(Coop.self, state: .favorite, accountId: accountId)
     }
 }
-

@@ -156,9 +156,10 @@ extension Player{
             let specialWeaponId = weapon[1]
             let subWeaponId = weapon[2]
 
-            self.mainWeapon = try! ImageMap.fetchOne(db, key: mainWeaponId)!
-            self.specialWeapon = try! ImageMap.fetchOne(db, key: specialWeaponId)!
-            self.subWeapon = try! ImageMap.fetchOne(db, key: subWeaponId)!
+            // 图片资源缺失时退化为占位图，避免解码历史数据时崩溃
+            self.mainWeapon = (try? ImageMap.fetchOne(db, key: mainWeaponId)) ?? ImageMap(nameId: "", name: "", hash: "")
+            self.specialWeapon = (try? ImageMap.fetchOne(db, key: specialWeaponId)) ?? ImageMap(nameId: "", name: "", hash: "")
+            self.subWeapon = (try? ImageMap.fetchOne(db, key: subWeaponId)) ?? ImageMap(nameId: "", name: "", hash: "")
         }
     }
 }

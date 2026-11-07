@@ -21,9 +21,12 @@ public struct Account:Codable,FetchableRecord,PersistableRecord{
     }
 }
 
+/// 按 SplatNet 账号 id 查询本地账号主键；查不到（或表尚未建立）时返回 0。
 func getAccountId(by sp3ID:String,db:Database) -> Int64{
-    let row = try! Row.fetchOne(db, sql: "SELECT id FROM account WHERE sp3Id = ?",arguments:[sp3ID])
-    return row?["id"] ?? 0
+    guard let row = try? Row.fetchOne(db, sql: "SELECT id FROM account WHERE sp3Id = ?",arguments:[sp3ID]) else {
+        return 0
+    }
+    return row["id"] ?? 0
 }
 
 extension SplatDatabase {

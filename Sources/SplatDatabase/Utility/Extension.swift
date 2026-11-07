@@ -71,9 +71,10 @@ extension String {
             print("Error: String is not a valid Base64 encoded string")
             return ""
         }
-        let splitted = String(data: data, encoding: .utf8)?.split(separator: ":").first?.split(separator: "-").last
-        
-        return String(splitted!)
+        guard let splitted = String(data: data, encoding: .utf8)?.split(separator: ":").first?.split(separator: "-").last else {
+            return ""
+        }
+        return String(splitted)
     }
     
     func extractPlayerId() -> String {
@@ -81,9 +82,10 @@ extension String {
             print("Error: String is not a valid Base64 encoded string")
             return ""
         }
-        let splitted = String(data: data, encoding: .utf8)?.split(separator: "-").last
-
-        return String(splitted!)
+        guard let splitted = String(data: data, encoding: .utf8)?.split(separator: "-").last else {
+            return ""
+        }
+        return String(splitted)
     }
 
 }

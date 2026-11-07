@@ -14,10 +14,19 @@ class Splat3DatabaseTests: XCTestCase {
     override func setUpWithError() throws {
         super.setUp()
 
-        dbManager = SplatDatabase(path:"/Users/jiangfeng/XcodeProject/FoodTracker/ink.sqlite")
+        // 每个用例使用独立的临时数据库，避免依赖开发机上的固定路径
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("SplatDatabaseTests-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        tempDatabasePath = directory.appendingPathComponent("ink.sqlite").path
+        dbManager = SplatDatabase(path: tempDatabasePath)
     }
 
     override func tearDownWithError() throws {
+        dbManager = nil
+        if let tempDatabasePath {
+            try? FileManager.default.removeItem(atPath: (tempDatabasePath as NSString).deletingLastPathComponent)
+        }
         super.tearDown()
     }
 
@@ -31,7 +40,7 @@ class Splat3DatabaseTests: XCTestCase {
     func testInsertCoop() async throws{
         let bundle = Bundle.module
         let path = bundle.url(forResource: "CoopDetailHolder", withExtension: "json")
-        let json:JSON = JSON(parseJSON: try String(contentsOfFile: path!.path))
+        let json:JSON = JSON(parseJSON: try String(contentsOfFile: try XCTUnwrap(path).path))
 
         let value = json["data"]["coopHistoryDetail"]
 
@@ -57,11 +66,11 @@ class Splat3DatabaseTests: XCTestCase {
     func testInsertBattle() async throws{
         let bundle = Bundle.module
         let path = bundle.url(forResource: "VsHistoryDetailQuery", withExtension: "json")
-        let json:JSON = JSON(parseJSON: try String(contentsOfFile: path!.path))
+        let json:JSON = JSON(parseJSON: try String(contentsOfFile: try XCTUnwrap(path).path))
 
         let values = json["data"]
 
-        try dbManager.insertBattle(json: values[1])
+        try dbManager.insertBattle(json: values["vsHistoryDetail"])
 
         let battles = try await dbManager.dbQueue.read { db in
             return try Battle.fetchAll(db)
@@ -480,7 +489,7 @@ class Splat3DatabaseTests: XCTestCase {
         // 首先插入一个coop记录用于测试
         let bundle = Bundle.module
         let path = bundle.url(forResource: "CoopDetailHolder", withExtension: "json")
-        let json: JSON = JSON(parseJSON: try String(contentsOfFile: path!.path))
+        let json: JSON = JSON(parseJSON: try String(contentsOfFile: try XCTUnwrap(path).path))
         let value = json["data"]["coopHistoryDetail"]
         
         try dbManager.insertCoop(json: value)
@@ -489,8 +498,8 @@ class Splat3DatabaseTests: XCTestCase {
         let coops = try await dbManager.fetchActiveCoops()
         XCTAssertGreaterThan(coops.count, 0, "应该有至少一个coop记录")
         
-        let testCoop = coops.first!
-        let coopId = testCoop.id!
+        let testCoop = try XCTUnwrap(coops.first)
+        let coopId = try XCTUnwrap(testCoop.id)
         
         print("测试coop软删除和恢复 - coopId: \(coopId)")
         
@@ -522,7 +531,7 @@ class Splat3DatabaseTests: XCTestCase {
         // 首先插入一个coop记录用于测试
         let bundle = Bundle.module
         let path = bundle.url(forResource: "CoopDetailHolder", withExtension: "json")
-        let json: JSON = JSON(parseJSON: try String(contentsOfFile: path!.path))
+        let json: JSON = JSON(parseJSON: try String(contentsOfFile: try XCTUnwrap(path).path))
         let value = json["data"]["coopHistoryDetail"]
         
         try dbManager.insertCoop(json: value)
@@ -531,8 +540,8 @@ class Splat3DatabaseTests: XCTestCase {
         let coops = try await dbManager.fetchActiveCoops()
         XCTAssertGreaterThan(coops.count, 0, "应该有至少一个coop记录")
         
-        let testCoop = coops.first!
-        let coopId = testCoop.id!
+        let testCoop = try XCTUnwrap(coops.first)
+        let coopId = try XCTUnwrap(testCoop.id)
         
         print("测试coop喜爱标记 - coopId: \(coopId)")
         
@@ -558,17 +567,17 @@ class Splat3DatabaseTests: XCTestCase {
         // 首先插入一个battle记录用于测试
         let bundle = Bundle.module
         let path = bundle.url(forResource: "VsHistoryDetailQuery", withExtension: "json")
-        let json: JSON = JSON(parseJSON: try String(contentsOfFile: path!.path))
+        let json: JSON = JSON(parseJSON: try String(contentsOfFile: try XCTUnwrap(path).path))
         let values = json["data"]
         
-        try dbManager.insertBattle(json: values[1])
+        try dbManager.insertBattle(json: values["vsHistoryDetail"])
         
         // 获取插入的battle记录
         let battles = try await dbManager.fetchActiveBattles()
         XCTAssertGreaterThan(battles.count, 0, "应该有至少一个battle记录")
         
-        let testBattle = battles.first!
-        let battleId = testBattle.id!
+        let testBattle = try XCTUnwrap(battles.first)
+        let battleId = try XCTUnwrap(testBattle.id)
         
         print("测试battle软删除和恢复 - battleId: \(battleId)")
         
@@ -600,17 +609,17 @@ class Splat3DatabaseTests: XCTestCase {
         // 首先插入一个battle记录用于测试
         let bundle = Bundle.module
         let path = bundle.url(forResource: "VsHistoryDetailQuery", withExtension: "json")
-        let json: JSON = JSON(parseJSON: try String(contentsOfFile: path!.path))
+        let json: JSON = JSON(parseJSON: try String(contentsOfFile: try XCTUnwrap(path).path))
         let values = json["data"]
         
-        try dbManager.insertBattle(json: values[1])
+        try dbManager.insertBattle(json: values["vsHistoryDetail"])
         
         // 获取插入的battle记录
         let battles = try await dbManager.fetchActiveBattles()
         XCTAssertGreaterThan(battles.count, 0, "应该有至少一个battle记录")
         
-        let testBattle = battles.first!
-        let battleId = testBattle.id!
+        let testBattle = try XCTUnwrap(battles.first)
+        let battleId = try XCTUnwrap(testBattle.id)
         
         print("测试battle喜爱标记 - battleId: \(battleId)")
         

@@ -8,9 +8,16 @@ class TitleList {
     let titleList: JSON
 
     private init() {
-        let url = Bundle.module.url(forResource: "titles", withExtension: "json")!
-        let jsonData = try! Data(contentsOf: url)
-        titleList = try! JSON(data: jsonData)
+        guard
+            let url = Bundle.module.url(forResource: "titles", withExtension: "json"),
+            let jsonData = try? Data(contentsOf: url),
+            let json = try? JSON(data: jsonData)
+        else {
+            // 资源缺失时退化为空表，避免启动即崩溃
+            titleList = JSON([:])
+            return
+        }
+        titleList = json
     }
 }
 
